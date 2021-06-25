@@ -54,6 +54,7 @@
 #include <sstream>
 #include <fstream>
 #include <limits>
+#include <direct.h>
 
 #include <boost/variant.hpp>
 
@@ -892,7 +893,8 @@ namespace crimson {
             double total_res = 0.0;
 
             std::ofstream ofs;
-
+            std::ofstream ofs_pwd;
+            std::string s_path;
             // NB: All threads declared at end, so they're destructed first!
 
             std::unique_ptr<RunEvery> cleaning_job;
@@ -923,6 +925,10 @@ namespace crimson {
                                 new RunEvery(check_time,
                                              std::bind(&PriorityQueueBase::do_clean, this)));
                 //ofs.open("/root/swh/result/scheduling.txt", std::ios_base::out | std::ios_base::app);
+                char path[255];
+                getcwd(path, 255);
+                s_path = path;
+                s_path += "/scheduling.txt";  
             }
 
             template<typename Rep, typename Per>
@@ -950,7 +956,10 @@ namespace crimson {
                                 new RunEvery(check_time,
                                              std::bind(&PriorityQueueBase::do_clean, this)));
               //ofs.open("/root/swh/result/scheduling.txt", std::ios_base::out | std::ios_base::app);
-
+                char path[255];
+                getcwd(path, 255);
+                s_path = path;
+                s_path += "/scheduling.txt";  
             }
 
             ~PriorityQueueBase() {
@@ -992,6 +1001,9 @@ namespace crimson {
               } else{
                 ctype = "A";
               }
+              ofs_pwd << get_time() << "," << ctype << "(" << client->info->reservation << ", " << client->info->weight << ", " << client->info->limit << ") "
+                << client->r_counter << ", " << client->r0_counter << ", " << client->b_counter << ", "
+                << client->be_counter << std::endl;
               ofs << get_time() << "," << ctype << "(" << client->info->reservation << ", " << client->info->weight << ", " << client->info->limit << ") "
                 << client->r_counter << ", " << client->r0_counter << ", " << client->b_counter << ", "
                 << client->be_counter << std::endl;
@@ -1234,7 +1246,9 @@ namespace crimson {
 
                 // TODO: update counter in do_next_request
                 if (now - win_start >= win_size) {
-                ofs.open("/root/swh/result/scheduling.txt", std::ios_base::out | std::ios_base::app);  
+                ofs.open("/root/swh/result/scheduling.txt", std::ios_base::app);
+
+                ofs_pwd.open(s_path.c_str(), std::ios_base::app);
 		  for (auto c : client_map) {
                       printScheduling(c.second);
                         c.second->b_counter = 0;
@@ -1244,6 +1258,7 @@ namespace crimson {
                     }
                     win_start = std::max(win_start + win_size, now);
                 ofs.close();
+                ofs_pwd.close();
 		}
 
                 // process
