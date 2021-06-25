@@ -54,7 +54,7 @@
 #include <sstream>
 #include <fstream>
 #include <limits>
-#include <direct.h>
+#include <unistd.h>
 
 #include <boost/variant.hpp>
 
