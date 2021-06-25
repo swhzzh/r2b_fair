@@ -56,6 +56,14 @@
 #include <limits>
 #include <unistd.h>
 
+#include <cstring>
+
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+// #include <unistd.h>
+#include <arpa/inet.h>
+
 #include <boost/variant.hpp>
 
 #include "indirect_intrusive_heap.h"
@@ -895,10 +903,31 @@ namespace crimson {
             std::ofstream ofs;
             std::ofstream ofs_pwd;
             std::string s_path;
+            int client_socket;
+            
+
             // NB: All threads declared at end, so they're destructed first!
 
             std::unique_ptr<RunEvery> cleaning_job;
 
+
+            void init_client_socket(){
+                client_socket = socket(AF_INET, SOCK_STREAM, 0);
+                if (client_socket == -1) {
+                    // std::cout << "Error: socket" << std::endl;
+                    return;
+                }
+                // connect
+                struct sockaddr_in serverAddr;
+                serverAddr.sin_family = AF_INET;
+                serverAddr.sin_port = htons(18000);
+                serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+                if (connect(client_socket, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
+                    // std::cout << "Error: connect" << std::endl;
+                    client_socket = -1;
+                    return;
+                }
+            }
 
             // COMMON constructor that others feed into; we can accept three
             // different variations of durations
@@ -929,6 +958,7 @@ namespace crimson {
                 getcwd(path, 255);
                 s_path = path;
                 s_path += "/scheduling.txt";  
+                init_client_socket();
             }
 
             template<typename Rep, typename Per>
@@ -959,7 +989,8 @@ namespace crimson {
                 char path[255];
                 getcwd(path, 255);
                 s_path = path;
-                s_path += "/scheduling.txt";  
+                s_path += "/scheduling.txt"; 
+                init_client_socket(); 
             }
 
             ~PriorityQueueBase() {
@@ -1001,12 +1032,20 @@ namespace crimson {
               } else{
                 ctype = "A";
               }
-              ofs_pwd << get_time() << "," << ctype << "(" << client->info->reservation << ", " << client->info->weight << ", " << client->info->limit << ") "
+              std::stringstream s_builder;
+
+              s_builder << get_time() << "," << ctype << "(" << client->info->reservation << ", " << client->info->weight << ", " << client->info->limit << ") "
                 << client->r_counter << ", " << client->r0_counter << ", " << client->b_counter << ", "
                 << client->be_counter << std::endl;
-              ofs << get_time() << "," << ctype << "(" << client->info->reservation << ", " << client->info->weight << ", " << client->info->limit << ") "
-                << client->r_counter << ", " << client->r0_counter << ", " << client->b_counter << ", "
-                << client->be_counter << std::endl;
+            //   ofs << get_time() << "," << ctype << "(" << client->info->reservation << ", " << client->info->weight << ", " << client->info->limit << ") "
+            //     << client->r_counter << ", " << client->r0_counter << ", " << client->b_counter << ", "
+            //     << client->be_counter << std::endl;
+                const std::string info = s_builder.str();
+                ofs << info;
+                ofs_pwd << info;
+                if(client_socket != -1){
+                    send(client_socket, info.c_str(), info.length(), 0);
+                }
             }
 
             // data_mtx must be held by caller
