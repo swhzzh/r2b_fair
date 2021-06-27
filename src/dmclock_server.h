@@ -995,6 +995,7 @@ namespace crimson {
 
             ~PriorityQueueBase() {
                 finishing = true;
+                close(client_socket);
                 //ofs.close();
             }
 
@@ -1005,10 +1006,16 @@ namespace crimson {
                 }
                 return client.info;
             }
-
+            // 假设即使是开启了is_dynamic_cli_info_f, 也不会动态更改用来分配资源的weight
+            // 这边逻辑问题比较大, 现在先这样实现吧
             const ClientInfo *client_info_wrapper(ClientRec &client) {
                 if (is_dynamic_cli_info_f) {
                     client.info = client_info_f(client.client);
+                    if (client.info->client_type == ClientType::R) {
+                        const std::shared_ptr<ClientInfo> info(
+                                new ClientInfo(client.info->reservation, client.deltar, client.dlimit, ClientType::R));
+                        return info.get();
+                    }
                 }
                 if (client.info->client_type == ClientType::R) {
                     const std::shared_ptr<ClientInfo> info(
@@ -1045,6 +1052,9 @@ namespace crimson {
                 ofs_pwd << info;
                 if(client_socket != -1){
                     send(client_socket, info.c_str(), info.length(), 0);
+                } else{
+                    ofs << "socket connect failed" << std::endl;
+                    ofs_pwd << "socket connect failed" << std::endl;
                 }
             }
 
@@ -1162,7 +1172,7 @@ namespace crimson {
                     client.update_req_tag(tag, tick);
                 }
 #else
-                const ClientInfo* client_info = get_cli_info(client);
+                const ClientInfo* client_info = client_info_wrapper(client);
                 assert(client_info);
                 RequestTag tag(client.get_req_tag(),
                            *client_info,
