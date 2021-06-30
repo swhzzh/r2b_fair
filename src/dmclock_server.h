@@ -121,7 +121,7 @@ namespace crimson {
                     weight_inv(0.0 == weight ? 0.0 : 1.0 / weight),
                     limit_inv(0.0 == limit ? 0.0 : 1.0 / limit),
                     client_type(ClientType::A) {
-                // empty
+              // empty
             }
 
             ClientInfo(double _reservation, double _weight, double _limit, ClientType _client_type) :
@@ -132,24 +132,24 @@ namespace crimson {
                     weight_inv(0.0 == weight ? 0.0 : 1.0 / weight),
                     limit_inv(0.0 == limit ? 0.0 : 1.0 / limit),
                     client_type(_client_type) {
-                // empty
+              // empty
             }
 
             friend std::ostream &operator<<(std::ostream &out,
                                             const ClientInfo &client) {
-                out <<
-                    "{ ClientInfo:: r:" << client.reservation <<
-                    " w:" << std::fixed << client.weight <<
-                    " l:" << std::fixed << client.limit <<
-                    " 1/r:" << std::fixed << client.reservation_inv <<
-                    " 1/w:" << std::fixed << client.weight_inv <<
-                    " 1/l:" << std::fixed << client.limit_inv <<
-                    " }";
-                return out;
+              out <<
+                  "{ ClientInfo:: r:" << client.reservation <<
+                  " w:" << std::fixed << client.weight <<
+                  " l:" << std::fixed << client.limit <<
+                  " 1/r:" << std::fixed << client.reservation_inv <<
+                  " 1/w:" << std::fixed << client.weight_inv <<
+                  " 1/l:" << std::fixed << client.limit_inv <<
+                  " }";
+              return out;
             }
 
             void update_resource(double new_res) {
-                resource = new_res;
+              resource = new_res;
             }
         }; // class ClientInfo
 
@@ -170,28 +170,28 @@ namespace crimson {
                        const double anticipation_timeout = 0.0) :
                     ready(false),
                     arrival(time) {
-                Time max_time = time;
-                if (time - anticipation_timeout < prev_tag.arrival)
-                    max_time -= anticipation_timeout;
+              Time max_time = time;
+              if (time - anticipation_timeout < prev_tag.arrival)
+                max_time -= anticipation_timeout;
 
-                // reservation = cost + tag_calc(max_time,
-                reservation = tag_calc(max_time,
-                                       prev_tag.reservation,
-                                       client.reservation_inv,
-                                       rho,
-                                       true);
-                proportion = tag_calc(max_time,
-                                      prev_tag.proportion,
-                                      client.weight_inv,
-                                      delta,
-                                      true);
-                limit = tag_calc(max_time,
-                                 prev_tag.limit,
-                                 client.limit_inv,
-                                 delta,
-                                 false);
+              // reservation = cost + tag_calc(max_time,
+              reservation = tag_calc(max_time,
+                                     prev_tag.reservation,
+                                     client.reservation_inv,
+                                     rho,
+                                     true);
+              proportion = tag_calc(max_time,
+                                    prev_tag.proportion,
+                                    client.weight_inv,
+                                    delta,
+                                    true);
+              limit = tag_calc(max_time,
+                               prev_tag.limit,
+                               client.limit_inv,
+                               delta,
+                               false);
 
-                assert(reservation < max_tag || proportion < max_tag);
+              assert(reservation < max_tag || proportion < max_tag);
             }
 
             RequestTag(const RequestTag &prev_tag,
@@ -209,7 +209,7 @@ namespace crimson {
                     limit(_lim),
                     ready(false),
                     arrival(_arrival) {
-                assert(reservation < max_tag || proportion < max_tag);
+              assert(reservation < max_tag || proportion < max_tag);
             }
 
             RequestTag(const RequestTag &other) :
@@ -218,27 +218,27 @@ namespace crimson {
                     limit(other.limit),
                     ready(other.ready),
                     arrival(other.arrival) {
-                // empty
+              // empty
             }
 
             static std::string format_tag_change(double before, double after) {
-                if (before == after) {
-                    return std::string("same");
-                } else {
-                    std::stringstream ss;
-                    ss << format_tag(before) << "=>" << format_tag(after);
-                    return ss.str();
-                }
+              if (before == after) {
+                return std::string("same");
+              } else {
+                std::stringstream ss;
+                ss << format_tag(before) << "=>" << format_tag(after);
+                return ss.str();
+              }
             }
 
             static std::string format_tag(double value) {
-                if (max_tag == value) {
-                    return std::string("max");
-                } else if (min_tag == value) {
-                    return std::string("min");
-                } else {
-                    return format_time(value, tag_modulo);
-                }
+              if (max_tag == value) {
+                return std::string("max");
+              } else if (min_tag == value) {
+                return std::string("min");
+              } else {
+                return format_time(value, tag_modulo);
+              }
             }
 
         private:
@@ -248,30 +248,30 @@ namespace crimson {
                                    double increment,
                                    uint32_t dist_req_val,
                                    bool extreme_is_high) {
-                if (0.0 == increment) {
-                    return extreme_is_high ? max_tag : min_tag;
-                } else {
-                    if (0 != dist_req_val) {
-                        increment *= dist_req_val;
-                    }
-                    return std::max(time, prev + increment);
+              if (0.0 == increment) {
+                return extreme_is_high ? max_tag : min_tag;
+              } else {
+                if (0 != dist_req_val) {
+                  increment *= dist_req_val;
                 }
+                return std::max(time, prev + increment);
+              }
             }
 
             friend std::ostream &operator<<(std::ostream &out,
                                             const RequestTag &tag) {
-                out <<
-                    "{ RequestTag:: ready:" << (tag.ready ? "true" : "false") <<
-                    " r:" << format_tag(tag.reservation) <<
-                    " p:" << format_tag(tag.proportion) <<
-                    " l:" << format_tag(tag.limit) <<
-                    #if 0 // try to resolve this to make sure Time is operator<<'able.
-                    #ifndef DO_NOT_DELAY_TAG_CALC
+              out <<
+                  "{ RequestTag:: ready:" << (tag.ready ? "true" : "false") <<
+                  " r:" << format_tag(tag.reservation) <<
+                  " p:" << format_tag(tag.proportion) <<
+                  " l:" << format_tag(tag.limit) <<
+                  #if 0 // try to resolve this to make sure Time is operator<<'able.
+                  #ifndef DO_NOT_DELAY_TAG_CALC
 	  " arrival:" << tag.arrival <<
 #endif
-                    #endif
-                    " }";
-                return out;
+                  #endif
+                  " }";
+              return out;
             }
         }; // class RequestTag
 
@@ -330,13 +330,13 @@ namespace crimson {
                         tag(_tag),
                         client_id(_client_id),
                         request(std::move(_request)) {
-                    // empty
+                  // empty
                 }
 
                 friend std::ostream &operator<<(std::ostream &out, const ClientReq &c) {
-                    out << "{ ClientReq:: tag:" << c.tag << " client:" <<
-                        c.client_id << " }";
-                    return out;
+                  out << "{ ClientReq:: tag:" << c.tag << " client:" <<
+                      c.client_id << " }";
+                  return out;
                 }
             }; // class ClientReq
 
@@ -377,17 +377,21 @@ namespace crimson {
 
                 double resource;
                 // r0 counter
-                std::atomic_uint r0_counter = 0;
+                std::atomic_uint r0_counter;
+                std::atomic_uint r0_break_limit_counter;
                 double deltar;
                 double dlimit;
                 // burst request counter
-                uint32_t b_counter = 0;
+                std::atomic_uint b_counter;
+                std::atomic_uint b_break_limit_counter;
                 // burst slice: t = resource * win_size / limit
-                Time burst_slice = 1.0;
+//                Time burst_slice = 1.0;
 
                 // counter for test
-                uint32_t r_counter = 0;
-                uint32_t be_counter = 0;
+                std::atomic_uint r_counter;
+//                std::atomic_uint r_break_limit_counter;
+                std::atomic_uint be_counter;
+                std::atomic_uint be_break_limit_counter;
 
                 ClientRec(C _client,
                           const ClientInfo *_info,
@@ -398,124 +402,130 @@ namespace crimson {
                         idle(true),
                         last_tick(current_tick),
                         cur_rho(1),
-                        cur_delta(1),
-                        r0_counter(0),
-                        b_counter(0) {
-                    // empty
+                        cur_delta(1) {
+                  r0_counter.store(0);
+                  r0_break_limit_counter.store(0);
+                  b_counter.store(0);
+                  b_break_limit_counter.store(0);
+                  r_counter.store(0);
+//                  r_break_limit_counter.store(0);
+                  be_counter.store(0);
+                  be_break_limit_counter.store(0);
+                  // empty
                 }
 
                 inline const RequestTag &get_req_tag() const {
-                    return prev_tag;
+                  return prev_tag;
                 }
 
                 static inline void assign_unpinned_tag(double &lhs, const double rhs) {
-                    if (rhs != max_tag && rhs != min_tag) {
-                        lhs = rhs;
-                    }
+                  if (rhs != max_tag && rhs != min_tag) {
+                    lhs = rhs;
+                  }
                 }
 
                 inline void update_req_tag(const RequestTag &_prev,
                                            const Counter &_tick) {
-                    assign_unpinned_tag(prev_tag.reservation, _prev.reservation);
-                    assign_unpinned_tag(prev_tag.limit, _prev.limit);
-                    assign_unpinned_tag(prev_tag.proportion, _prev.proportion);
-                    prev_tag.arrival = _prev.arrival;
-                    last_tick = _tick;
+                  assign_unpinned_tag(prev_tag.reservation, _prev.reservation);
+                  assign_unpinned_tag(prev_tag.limit, _prev.limit);
+                  assign_unpinned_tag(prev_tag.proportion, _prev.proportion);
+                  prev_tag.arrival = _prev.arrival;
+                  last_tick = _tick;
                 }
 
                 inline void add_request(const RequestTag &tag,
                                         const C &client_id,
                                         RequestRef &&request) {
-                    requests.emplace_back(ClientReq(tag, client_id, std::move(request)));
+                  requests.emplace_back(ClientReq(tag, client_id, std::move(request)));
                 }
 
                 inline const ClientReq &next_request() const {
-                    return requests.front();
+                  return requests.front();
                 }
 
                 inline ClientReq &next_request() {
-                    return requests.front();
+                  return requests.front();
                 }
 
                 inline void pop_request() {
-                    requests.pop_front();
+                  requests.pop_front();
                 }
 
                 inline bool has_request() const {
-                    return !requests.empty();
+                  return !requests.empty();
                 }
 
                 inline size_t request_count() const {
-                    return requests.size();
+                  return requests.size();
                 }
 
                 // NB: because a deque is the underlying structure, this
                 // operation might be expensive
                 bool remove_by_req_filter_fw(std::function<bool(RequestRef &&)> filter_accum) {
-                    bool any_removed = false;
-                    for (auto i = requests.begin();
-                         i != requests.end();
-                        /* no inc */) {
-                        if (filter_accum(std::move(i->request))) {
-                            any_removed = true;
-                            i = requests.erase(i);
-                        } else {
-                            ++i;
-                        }
+                  bool any_removed = false;
+                  for (auto i = requests.begin();
+                       i != requests.end();
+                    /* no inc */) {
+                    if (filter_accum(std::move(i->request))) {
+                      any_removed = true;
+                      i = requests.erase(i);
+                    } else {
+                      ++i;
                     }
-                    return any_removed;
+                  }
+                  return any_removed;
                 }
 
                 // NB: because a deque is the underlying structure, this
                 // operation might be expensive
                 bool remove_by_req_filter_bw(std::function<bool(RequestRef &&)> filter_accum) {
-                    bool any_removed = false;
-                    for (auto i = requests.rbegin();
-                         i != requests.rend();
-                        /* no inc */) {
-                        if (filter_accum(std::move(i->request))) {
-                            any_removed = true;
-                            i = decltype(i){requests.erase(std::next(i).base())};
-                        } else {
-                            ++i;
-                        }
+                  bool any_removed = false;
+                  for (auto i = requests.rbegin();
+                       i != requests.rend();
+                    /* no inc */) {
+                    if (filter_accum(std::move(i->request))) {
+                      any_removed = true;
+                      i = decltype(i){requests.erase(std::next(i).base())};
+                    } else {
+                      ++i;
                     }
-                    return any_removed;
+                  }
+                  return any_removed;
                 }
 
                 inline bool
                 remove_by_req_filter(std::function<bool(RequestRef &&)> filter_accum,
                                      bool visit_backwards) {
-                    if (visit_backwards) {
-                        return remove_by_req_filter_bw(filter_accum);
-                    } else {
-                        return remove_by_req_filter_fw(filter_accum);
-                    }
+                  if (visit_backwards) {
+                    return remove_by_req_filter_bw(filter_accum);
+                  } else {
+                    return remove_by_req_filter_fw(filter_accum);
+                  }
                 }
 
                 friend std::ostream &
                 operator<<(std::ostream &out,
                            const typename PriorityQueueBase<C, R, U1, B>::ClientRec &e) {
-                    out << "{ ClientRec::" <<
-                        " client:" << e.client <<
-                        " prev_tag:" << e.prev_tag <<
-                        " req_count:" << e.requests.size() <<
-                        " top_req:";
-                    if (e.has_request()) {
-                        out << e.next_request();
-                    } else {
-                        out << "none";
-                    }
-                    out << " }";
+                  out << "{ ClientRec::" <<
+                      " client:" << e.client <<
+                      " prev_tag:" << e.prev_tag <<
+                      " req_count:" << e.requests.size() <<
+                      " top_req:";
+                  if (e.has_request()) {
+                    out << e.next_request();
+                  } else {
+                    out << "none";
+                  }
+                  out << " }";
 
-                    return out;
+                  return out;
                 }
 
-                void update_burst_slice(double win_size) {
-                    if (info->client_type == ClientType::B) {
-                        burst_slice = resource * win_size * info->limit_inv;
-                    }
-                }
+//                void update_burst_slice(double win_size) {
+//                    if (info->client_type == ClientType::B) {
+//                        burst_slice = resource * win_size * info->limit_inv;
+//                    }
+//                }
             }; // class ClientRec
 
             using ClientRecRef = std::shared_ptr<ClientRec>;
@@ -554,7 +564,7 @@ namespace crimson {
                 // calls to this are clearer than calls to the default
                 // constructor
                 static inline NextReq none() {
-                    return NextReq();
+                  return NextReq();
                 }
             };
 
@@ -564,174 +574,174 @@ namespace crimson {
 
 
             bool empty() const {
-                // TODO: to be modified
-                DataGuard g(data_mtx);
+              // TODO: to be modified
+              DataGuard g(data_mtx);
 //	            return (prop_heap.empty() || ! prop_heap.top().has_request());
-                return (resv_heap.empty() || !resv_heap.top().has_request()) &&
-                       (burst_heap.empty() || !burst_heap.top().has_request()) &&
-                       (best_heap.empty() || !best_heap.top().has_request());
+              return (resv_heap.empty() || !resv_heap.top().has_request()) &&
+                     (burst_heap.empty() || !burst_heap.top().has_request()) &&
+                     (best_heap.empty() || !best_heap.top().has_request());
             }
 
 
             size_t client_count() const {
-                DataGuard g(data_mtx);
-                return client_map.size();
+              DataGuard g(data_mtx);
+              return client_map.size();
             }
 
 
             size_t request_count() const {
-                // TODO: to be modified
-                DataGuard g(data_mtx);
-                size_t total = 0;
-                for (auto i = resv_heap.cbegin(); i != resv_heap.cend(); ++i) {
-                    total += i->request_count();
-                }
-                for (auto i = burst_heap.cbegin(); i != burst_heap.cend(); ++i) {
-                    total += i->request_count();
-                }
-                for (auto i = best_heap.cbegin(); i != best_heap.cend(); ++i) {
-                    total += i->request_count();
-                }
-                return total;
+              // TODO: to be modified
+              DataGuard g(data_mtx);
+              size_t total = 0;
+              for (auto i = resv_heap.cbegin(); i != resv_heap.cend(); ++i) {
+                total += i->request_count();
+              }
+              for (auto i = burst_heap.cbegin(); i != burst_heap.cend(); ++i) {
+                total += i->request_count();
+              }
+              for (auto i = best_heap.cbegin(); i != best_heap.cend(); ++i) {
+                total += i->request_count();
+              }
+              return total;
             }
 
 
             bool remove_by_req_filter(std::function<bool(RequestRef &&)> filter_accum,
                                       bool visit_backwards = false) {
-                bool any_removed = false;
-                DataGuard g(data_mtx);
-                for (auto i : client_map) {
-                    bool modified =
-                            i.second->remove_by_req_filter(filter_accum, visit_backwards);
-                    if (modified) {
-                        // TODO: by different client type
-                        if (i.second->info->client_type == ClientType::R) {
-                            resv_heap.adjust(*i.second);
-                            deltar_heap.adjust(*i.second);
+              bool any_removed = false;
+              DataGuard g(data_mtx);
+              for (auto i : client_map) {
+                bool modified =
+                        i.second->remove_by_req_filter(filter_accum, visit_backwards);
+                if (modified) {
+                  // TODO: by different client type
+                  if (i.second->info->client_type == ClientType::R) {
+                    resv_heap.adjust(*i.second);
+                    deltar_heap.adjust(*i.second);
 //                            limit_heap.adjust(*i.second);
-                        }
+                  }
 
-                        if (i.second->info->client_type == ClientType::B) {
-                            burst_heap.adjust(*i.second);
-                            limit_heap.adjust(*i.second);
-                        }
+                  if (i.second->info->client_type == ClientType::B) {
+                    burst_heap.adjust(*i.second);
+                    limit_heap.adjust(*i.second);
+                  }
 
-                        if (i.second->info->client_type == ClientType::A) {
-                            best_heap.adjust(*i.second);
-                        }
+                  if (i.second->info->client_type == ClientType::A) {
+                    best_heap.adjust(*i.second);
+                  }
 
 //                        prop_heap.adjust(*i.second);
 
-                        any_removed = true;
-                    }
+                  any_removed = true;
                 }
-                return any_removed;
+              }
+              return any_removed;
             }
 
 
             // use as a default value when no accumulator is provide
             static void request_sink(RequestRef &&req) {
-                // do nothing
+              // do nothing
             }
 
 
             void remove_by_client(const C &client,
                                   bool reverse = false,
                                   std::function<void(RequestRef &&)> accum = request_sink) {
-                DataGuard g(data_mtx);
+              DataGuard g(data_mtx);
 
-                auto i = client_map.find(client);
+              auto i = client_map.find(client);
 
-                if (i == client_map.end()) return;
+              if (i == client_map.end()) return;
 
-                if (reverse) {
-                    for (auto j = i->second->requests.rbegin();
-                         j != i->second->requests.rend();
-                         ++j) {
-                        accum(std::move(j->request));
-                    }
-                } else {
-                    for (auto j = i->second->requests.begin();
-                         j != i->second->requests.end();
-                         ++j) {
-                        accum(std::move(j->request));
-                    }
+              if (reverse) {
+                for (auto j = i->second->requests.rbegin();
+                     j != i->second->requests.rend();
+                     ++j) {
+                  accum(std::move(j->request));
                 }
+              } else {
+                for (auto j = i->second->requests.begin();
+                     j != i->second->requests.end();
+                     ++j) {
+                  accum(std::move(j->request));
+                }
+              }
 
-                i->second->requests.clear();
+              i->second->requests.clear();
 // TODO: by different client type
-                if (i->second->info->client_type == ClientType::R) {
-                    resv_heap.adjust(*i->second);
-                    deltar_heap.adjust(*i->second);
+              if (i->second->info->client_type == ClientType::R) {
+                resv_heap.adjust(*i->second);
+                deltar_heap.adjust(*i->second);
 //                    limit_heap.adjust(*i->second);
-                    //reduce_total_reserv(i->second->info->reservation);
-                }
+                //reduce_total_reserv(i->second->info->reservation);
+              }
 
-                if (i->second->info->client_type == ClientType::B) {
-                    burst_heap.adjust(*i->second);
-                    limit_heap.adjust(*i->second);
-                }
-                if (i->second->info->client_type == ClientType::A) {
-                    best_heap.adjust(*i->second);
-                }
+              if (i->second->info->client_type == ClientType::B) {
+                burst_heap.adjust(*i->second);
+                limit_heap.adjust(*i->second);
+              }
+              if (i->second->info->client_type == ClientType::A) {
+                best_heap.adjust(*i->second);
+              }
 
 //                prop_heap.adjust(*i->second);
 
-                reduce_total_wgt(i->second->info->weight);
-                update_client_res();
+              reduce_total_wgt(i->second->info->weight);
+              update_client_res();
             }
 
 
             uint get_heap_branching_factor() const {
-                return B;
+              return B;
             }
 
 
             void update_client_info(const C &client_id) {
-                DataGuard g(data_mtx);
-                auto client_it = client_map.find(client_id);
-                if (client_map.end() != client_it) {
-                    ClientRec &client = (*client_it->second);
-                    //reduce_total_wgt(client.info->weight);
-                    reduce_total_reserv(client.info->reservation);
-                    client.info = client_info_f(client_id);
-                    add_total_wgt(client.info->weight);
-                    //add_total_reserv(client.info->reservation);
-                    update_client_res();
-                }
+              DataGuard g(data_mtx);
+              auto client_it = client_map.find(client_id);
+              if (client_map.end() != client_it) {
+                ClientRec &client = (*client_it->second);
+                //reduce_total_wgt(client.info->weight);
+                reduce_total_reserv(client.info->reservation);
+                client.info = client_info_f(client_id);
+                add_total_wgt(client.info->weight);
+                //add_total_reserv(client.info->reservation);
+                update_client_res();
+              }
             }
 
 
             void update_client_infos() {
-                DataGuard g(data_mtx);
-                for (auto i : client_map) {
-                    i.second->info = client_info_f(i.second->client);
-                }
+              DataGuard g(data_mtx);
+              for (auto i : client_map) {
+                i.second->info = client_info_f(i.second->client);
+              }
             }
 
 
             friend std::ostream &operator<<(std::ostream &out,
                                             const PriorityQueueBase &q) {
-                std::lock_guard<decltype(q.data_mtx)> guard(q.data_mtx);
+              std::lock_guard<decltype(q.data_mtx)> guard(q.data_mtx);
 
-                out << "{ PriorityQueue::";
-                for (const auto &c : q.client_map) {
-                    out << "  { client:" << c.first << ", record:" << *c.second <<
-                        " }";
-                }
-                if (!q.resv_heap.empty()) {
-                    const auto &resv = q.resv_heap.top();
-                    out << " { reservation_top:" << resv << " }";
-                    const auto &ready = q.burst_heap.top();
-                    out << " { ready_top:" << ready << " }";
-                    const auto &limit = q.limit_heap.top();
-                    out << " { limit_top:" << limit << " }";
-                } else {
-                    out << " HEAPS-EMPTY";
-                }
-                out << " }";
+              out << "{ PriorityQueue::";
+              for (const auto &c : q.client_map) {
+                out << "  { client:" << c.first << ", record:" << *c.second <<
+                    " }";
+              }
+              if (!q.resv_heap.empty()) {
+                const auto &resv = q.resv_heap.top();
+                out << " { reservation_top:" << resv << " }";
+                const auto &ready = q.burst_heap.top();
+                out << " { ready_top:" << ready << " }";
+                const auto &limit = q.limit_heap.top();
+                out << " { limit_top:" << limit << " }";
+              } else {
+                out << " HEAPS-EMPTY";
+              }
+              out << " }";
 
-                return out;
+              return out;
             }
 
             // for debugging
@@ -740,18 +750,18 @@ namespace crimson {
                                 bool show_lim = true,
                                 bool show_ready = true,
                                 bool show_prop = true) const {
-                auto filter = [](const ClientRec &e) -> bool { return true; };
-                DataGuard g(data_mtx);
-                if (show_res) {
-                    resv_heap.display_sorted(out << "RESER:", filter);
-                    deltar_heap.display_sorted(out << "DELTA:", filter);
-                }
-                if (show_lim) {
-                    limit_heap.display_sorted(out << "LIMIT:", filter);
-                }
-                if (show_ready) {
-                    burst_heap.display_sorted(out << "READY:", filter);
-                }
+              auto filter = [](const ClientRec &e) -> bool { return true; };
+              DataGuard g(data_mtx);
+              if (show_res) {
+                resv_heap.display_sorted(out << "RESER:", filter);
+                deltar_heap.display_sorted(out << "DELTA:", filter);
+              }
+              if (show_lim) {
+                limit_heap.display_sorted(out << "LIMIT:", filter);
+              }
+              if (show_ready) {
+                burst_heap.display_sorted(out << "READY:", filter);
+              }
 //#if USE_PROP_HEAP
 //                if (show_prop) {
 //                    prop_heap.display_sorted(out << "PROPO:", filter);
@@ -787,35 +797,35 @@ namespace crimson {
                     bool use_prop_delta>
             struct ClientCompare {
                 bool operator()(const ClientRec &n1, const ClientRec &n2) const {
-                    if (n1.has_request()) {
-                        if (n2.has_request()) {
-                            const auto &t1 = n1.next_request().tag;
-                            const auto &t2 = n2.next_request().tag;
-                            if (ReadyOption::ignore == ready_opt || t1.ready == t2.ready) {
-                                // if we don't care about ready or the ready values are the same
-                                if (use_prop_delta) {
-                                    return (t1.*tag_field + n1.prop_delta) <
-                                           (t2.*tag_field + n2.prop_delta);
-                                } else {
-                                    return t1.*tag_field < t2.*tag_field;
-                                }
-                            } else if (ReadyOption::raises == ready_opt) {
-                                // use_ready == true && the ready fields are different
-                                return t1.ready;
-                            } else {
-                                return t2.ready;
-                            }
+                  if (n1.has_request()) {
+                    if (n2.has_request()) {
+                      const auto &t1 = n1.next_request().tag;
+                      const auto &t2 = n2.next_request().tag;
+                      if (ReadyOption::ignore == ready_opt || t1.ready == t2.ready) {
+                        // if we don't care about ready or the ready values are the same
+                        if (use_prop_delta) {
+                          return (t1.*tag_field + n1.prop_delta) <
+                                 (t2.*tag_field + n2.prop_delta);
                         } else {
-                            // n1 has request but n2 does not
-                            return true;
+                          return t1.*tag_field < t2.*tag_field;
                         }
-                    } else if (n2.has_request()) {
-                        // n2 has request but n1 does not
-                        return false;
+                      } else if (ReadyOption::raises == ready_opt) {
+                        // use_ready == true && the ready fields are different
+                        return t1.ready;
+                      } else {
+                        return t2.ready;
+                      }
                     } else {
-                        // both have none; keep stable w false
-                        return false;
+                      // n1 has request but n2 does not
+                      return true;
                     }
+                  } else if (n2.has_request()) {
+                    // n2 has request but n1 does not
+                    return false;
+                  } else {
+                    // both have none; keep stable w false
+                    return false;
+                  }
                 }
             };
 
@@ -906,29 +916,29 @@ namespace crimson {
             std::ofstream ofs_pwd;
             std::string s_path;
             int client_socket;
-            
+
 
             // NB: All threads declared at end, so they're destructed first!
 
             std::unique_ptr<RunEvery> cleaning_job;
 
 
-            void init_client_socket(){
-                client_socket = socket(AF_INET, SOCK_STREAM, 0);
-                if (client_socket == -1) {
-                    // std::cout << "Error: socket" << std::endl;
-                    return;
-                }
-                // connect
-                struct sockaddr_in serverAddr;
-                serverAddr.sin_family = AF_INET;
-                serverAddr.sin_port = htons(18000);
-                serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
-                if (connect(client_socket, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
-                    // std::cout << "Error: connect" << std::endl;
-                    client_socket = -1;
-                    return;
-                }
+            void init_client_socket() {
+              client_socket = socket(AF_INET, SOCK_STREAM, 0);
+              if (client_socket == -1) {
+                // std::cout << "Error: socket" << std::endl;
+                return;
+              }
+              // connect
+              struct sockaddr_in serverAddr;
+              serverAddr.sin_family = AF_INET;
+              serverAddr.sin_port = htons(18000);
+              serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+              if (connect(client_socket, (struct sockaddr *) &serverAddr, sizeof(serverAddr)) < 0) {
+                // std::cout << "Error: connect" << std::endl;
+                client_socket = -1;
+                return;
+              }
             }
 
             // COMMON constructor that others feed into; we can accept three
@@ -949,18 +959,18 @@ namespace crimson {
                     check_time(std::chrono::duration_cast<Duration>(_check_time)),
                     system_capacity(40),
                     win_size(30) {
-                assert(_erase_age >= _idle_age);
-                assert(_check_time < _idle_age);
-                cleaning_job =
-                        std::unique_ptr<RunEvery>(
-                                new RunEvery(check_time,
-                                             std::bind(&PriorityQueueBase::do_clean, this)));
-                //ofs.open("/root/swh/result/scheduling.txt", std::ios_base::out | std::ios_base::app);
-                char path[255];
-                getcwd(path, 255);
-                s_path = path;
-                s_path += "/scheduling.txt";  
-                init_client_socket();
+              assert(_erase_age >= _idle_age);
+              assert(_check_time < _idle_age);
+              cleaning_job =
+                      std::unique_ptr<RunEvery>(
+                              new RunEvery(check_time,
+                                           std::bind(&PriorityQueueBase::do_clean, this)));
+              //ofs.open("/root/swh/result/scheduling.txt", std::ios_base::out | std::ios_base::app);
+              char path[255];
+              getcwd(path, 255);
+              s_path = path;
+              s_path += "/scheduling.txt";
+              init_client_socket();
             }
 
             template<typename Rep, typename Per>
@@ -981,83 +991,88 @@ namespace crimson {
                     check_time(std::chrono::duration_cast<Duration>(_check_time)),
                     system_capacity(_system_capacity),
                     win_size(_mclock_win_size) {
-                assert(_erase_age >= _idle_age);
-                assert(_check_time < _idle_age);
-                cleaning_job =
-                        std::unique_ptr<RunEvery>(
-                                new RunEvery(check_time,
-                                             std::bind(&PriorityQueueBase::do_clean, this)));
+              assert(_erase_age >= _idle_age);
+              assert(_check_time < _idle_age);
+              cleaning_job =
+                      std::unique_ptr<RunEvery>(
+                              new RunEvery(check_time,
+                                           std::bind(&PriorityQueueBase::do_clean, this)));
               //ofs.open("/root/swh/result/scheduling.txt", std::ios_base::out | std::ios_base::app);
-                char path[255];
-                getcwd(path, 255);
-                s_path = path;
-                s_path += "/scheduling.txt"; 
-                init_client_socket(); 
+              char path[255];
+              getcwd(path, 255);
+              s_path = path;
+              s_path += "/scheduling.txt";
+              init_client_socket();
             }
 
             ~PriorityQueueBase() {
-                finishing = true;
-                close(client_socket);
-                //ofs.close();
+              finishing = true;
+              close(client_socket);
+              //ofs.close();
             }
 
 
             inline const ClientInfo *get_cli_info(ClientRec &client) const {
-                if (is_dynamic_cli_info_f) {
-                    client.info = client_info_f(client.client);
-                }
-                return client.info;
+              if (is_dynamic_cli_info_f) {
+                client.info = client_info_f(client.client);
+              }
+              return client.info;
             }
+
             // 假设即使是开启了is_dynamic_cli_info_f, 也不会动态更改用来分配资源的weight
             // 这边逻辑问题比较大, 现在先这样实现吧
             const ClientInfo *client_info_wrapper(ClientRec &client) {
-                if (is_dynamic_cli_info_f) {
-                    client.info = client_info_f(client.client);
-                    if (client.info->client_type == ClientType::R) {
-                        const std::shared_ptr<ClientInfo> info(
-                                new ClientInfo(client.info->reservation, client.deltar, client.dlimit, ClientType::R));
-                        return info.get();
-                    }
-                }
+              if (is_dynamic_cli_info_f) {
+                client.info = client_info_f(client.client);
                 if (client.info->client_type == ClientType::R) {
-                    const std::shared_ptr<ClientInfo> info(
-                            new ClientInfo(client.info->reservation, client.deltar, client.dlimit, ClientType::R));
-                    return info.get();
+                  const std::shared_ptr<ClientInfo> info(
+                          new ClientInfo(client.info->reservation, client.deltar, client.dlimit, ClientType::R));
+                  return info.get();
                 }
+              }
+              if (client.info->client_type == ClientType::R) {
+                const std::shared_ptr<ClientInfo> info(
+                        new ClientInfo(client.info->reservation, client.deltar, client.dlimit, ClientType::R));
+                return info.get();
+              }
 //                if (client.info->client_type == ClientType::B) {
 //                    const std::shared_ptr<ClientInfo> info(
 //                            new ClientInfo(0.0, client.info->weight, client.dlimit, ClientType::B));
 //                    return info.get();
 //                }
-                return client.info;
+              return client.info;
             }
 
-            void printScheduling(std::shared_ptr<ClientRec> client){
+            void printScheduling(std::shared_ptr<ClientRec> client) {
               std::string ctype;
-              if (ClientType::R == client->info->client_type){
+              if (ClientType::R == client->info->client_type) {
                 ctype = "R";
-              } else if (ClientType::B == client->info->client_type){
+              } else if (ClientType::B == client->info->client_type) {
                 ctype = "B";
-              } else{
+              } else {
                 ctype = "A";
               }
               std::stringstream s_builder;
-
-              s_builder << get_time() << "," << ctype << "(" << client->info->reservation << ", " << client->info->weight << ", " << client->info->limit << ") "
-                << client->r_counter << ", " << client->r0_counter << ", " << client->b_counter << ", "
-                << client->be_counter << std::endl;
-            //   ofs << get_time() << "," << ctype << "(" << client->info->reservation << ", " << client->info->weight << ", " << client->info->limit << ") "
-            //     << client->r_counter << ", " << client->r0_counter << ", " << client->b_counter << ", "
-            //     << client->be_counter << std::endl;
-                const std::string info = s_builder.str();
-                ofs << info;
-                ofs_pwd << info;
-                if(client_socket != -1){
-                    send(client_socket, info.c_str(), info.length(), 0);
-                } else{
-                    ofs << "socket connect failed" << std::endl;
-                    ofs_pwd << "socket connect failed" << std::endl;
-                }
+//              std::atomic_uint a;
+//              std::cout << a;
+              s_builder /*<< get_time() << ","*/ << ctype << "(" << client->info->reservation << ", "
+                                                 << client->info->weight << ", " << client->info->limit << "):\t"
+                                                 << client->r_counter << ", " << client->r0_counter << ", "
+                                                 << client->r0_break_limit_counter << ", " << client->b_counter << ", "
+                                                 << client->b_break_limit_counter << ", " << client->be_counter << ","
+                                                 << client->be_break_limit_counter << std::endl;
+              //   ofs << get_time() << "," << ctype << "(" << client->info->reservation << ", " << client->info->weight << ", " << client->info->limit << ") "
+              //     << client->r_counter << ", " << client->r0_counter << ", " << client->b_counter << ", "
+              //     << client->be_counter << std::endl;
+              const std::string info = s_builder.str();
+              ofs << info;
+              ofs_pwd << info;
+              if (client_socket != -1) {
+                send(client_socket, info.c_str(), info.length(), 0);
+              } else {
+                ofs << "socket connect failed" << std::endl;
+                ofs_pwd << "socket connect failed" << std::endl;
+              }
             }
 
             // data_mtx must be held by caller
@@ -1066,167 +1081,167 @@ namespace crimson {
                                 const ReqParams &req_params,
                                 const Time time,
                                 const double cost = 0.0) {
-                ++tick;
+              ++tick;
 
-                // this pointer will help us create a reference to a shared
-                // pointer, no matter which of two codepaths we take
-                ClientRec *temp_client;
+              // this pointer will help us create a reference to a shared
+              // pointer, no matter which of two codepaths we take
+              ClientRec *temp_client;
 
-                auto client_it = client_map.find(client_id);
-                if (client_map.end() != client_it) {
-                    temp_client = &(*client_it->second); // address of obj of shared_ptr
-                } else {
-                    const ClientInfo *info = client_info_f(client_id);
-                    ClientRecRef client_rec =
-                            std::make_shared<ClientRec>(client_id, info, tick);
-                    if (info->client_type == ClientType::R) {
-                        resv_heap.push(client_rec);
+              auto client_it = client_map.find(client_id);
+              if (client_map.end() != client_it) {
+                temp_client = &(*client_it->second); // address of obj of shared_ptr
+              } else {
+                const ClientInfo *info = client_info_f(client_id);
+                ClientRecRef client_rec =
+                        std::make_shared<ClientRec>(client_id, info, tick);
+                if (info->client_type == ClientType::R) {
+                  resv_heap.push(client_rec);
 //                        limit_heap.push(client_rec);
-                        deltar_heap.push(client_rec);
-                    }
+                  deltar_heap.push(client_rec);
+                }
 
-                    if (info->client_type == ClientType::B) {
-                        limit_heap.push(client_rec);
-                        burst_heap.push(client_rec);
-                    }
+                if (info->client_type == ClientType::B) {
+                  limit_heap.push(client_rec);
+                  burst_heap.push(client_rec);
+                }
 
-                    if (info->client_type == ClientType::A) {
-                        best_heap.push(client_rec);
-                    }
+                if (info->client_type == ClientType::A) {
+                  best_heap.push(client_rec);
+                }
 
 //                    prop_heap.push(client_rec);
 
-                    client_map[client_id] = client_rec;
-                    add_total_wgt(info->weight);
-                    //add_total_reserv(info->reservation);
-                    // update clients' resource
-                    update_client_res();
-                    temp_client = &(*client_rec); // address of obj of shared_ptr
+                client_map[client_id] = client_rec;
+                add_total_wgt(info->weight);
+                //add_total_reserv(info->reservation);
+                // update clients' resource
+                update_client_res();
+                temp_client = &(*client_rec); // address of obj of shared_ptr
+              }
+              // for convenience, we'll create a reference to the shared pointer
+              ClientRec &client = *temp_client;
+
+              if (client.idle) {
+                // We need to do an adjustment so that idle clients compete
+                // fairly on proportional tags since those tags may have
+                // drifted from real-time. Either use the lowest existing
+                // proportion tag -- O(1) -- or the client with the lowest
+                // previous proportion tag -- O(n) where n = # clients.
+                //
+                // So we don't have to maintain a propotional queue that
+                // keeps the minimum on proportional tag alone (we're
+                // instead using a ready queue), we'll have to check each
+                // client.
+                //
+                // The alternative would be to maintain a proportional queue
+                // (define USE_PROP_TAG) and do an O(1) operation here.
+
+                // Was unable to confirm whether equality testing on
+                // std::numeric_limits<double>::max() is guaranteed, so
+                // we'll use a compile-time calculated trigger that is one
+                // third the max, which should be much larger than any
+                // expected organic value.
+                constexpr double lowest_prop_tag_trigger =
+                        std::numeric_limits<double>::max() / 3.0;
+
+                double lowest_prop_tag = std::numeric_limits<double>::max();
+                for (auto const &c : client_map) {
+                  // don't use ourselves (or anything else that might be
+                  // listed as idle) since we're now in the map
+                  if (!c.second->idle) {
+                    double p;
+                    // use either lowest proportion tag or previous proportion tag
+                    if (c.second->has_request()) {
+                      p = c.second->next_request().tag.proportion +
+                          c.second->prop_delta;
+                    } else {
+                      p = c.second->get_req_tag().proportion + c.second->prop_delta;
+                    }
+
+                    if (p < lowest_prop_tag) {
+                      lowest_prop_tag = p;
+                    }
+                  }
                 }
-                // for convenience, we'll create a reference to the shared pointer
-                ClientRec &client = *temp_client;
 
-                if (client.idle) {
-                    // We need to do an adjustment so that idle clients compete
-                    // fairly on proportional tags since those tags may have
-                    // drifted from real-time. Either use the lowest existing
-                    // proportion tag -- O(1) -- or the client with the lowest
-                    // previous proportion tag -- O(n) where n = # clients.
-                    //
-                    // So we don't have to maintain a propotional queue that
-                    // keeps the minimum on proportional tag alone (we're
-                    // instead using a ready queue), we'll have to check each
-                    // client.
-                    //
-                    // The alternative would be to maintain a proportional queue
-                    // (define USE_PROP_TAG) and do an O(1) operation here.
-
-                    // Was unable to confirm whether equality testing on
-                    // std::numeric_limits<double>::max() is guaranteed, so
-                    // we'll use a compile-time calculated trigger that is one
-                    // third the max, which should be much larger than any
-                    // expected organic value.
-                    constexpr double lowest_prop_tag_trigger =
-                            std::numeric_limits<double>::max() / 3.0;
-
-                    double lowest_prop_tag = std::numeric_limits<double>::max();
-                    for (auto const &c : client_map) {
-                        // don't use ourselves (or anything else that might be
-                        // listed as idle) since we're now in the map
-                        if (!c.second->idle) {
-                            double p;
-                            // use either lowest proportion tag or previous proportion tag
-                            if (c.second->has_request()) {
-                                p = c.second->next_request().tag.proportion +
-                                    c.second->prop_delta;
-                            } else {
-                                p = c.second->get_req_tag().proportion + c.second->prop_delta;
-                            }
-
-                            if (p < lowest_prop_tag) {
-                                lowest_prop_tag = p;
-                            }
-                        }
-                    }
-
-                    // if this conditional does not fire, it
-                    if (lowest_prop_tag < lowest_prop_tag_trigger) {
-                        client.prop_delta = lowest_prop_tag - time;
-                    }
-                    client.idle = false;
-                } // if this client was idle
+                // if this conditional does not fire, it
+                if (lowest_prop_tag < lowest_prop_tag_trigger) {
+                  client.prop_delta = lowest_prop_tag - time;
+                }
+                client.idle = false;
+              } // if this client was idle
 
 #ifndef DO_NOT_DELAY_TAG_CALC
-                RequestTag tag(0, 0, 0, time);
+              RequestTag tag(0, 0, 0, time);
 
-                if (!client.has_request()) {
+              if (!client.has_request()) {
 //                    const ClientInfo* client_info = get_cli_info(client);
-                    const ClientInfo *client_info = client_info_wrapper(client);
-                    assert(client_info);
-                    tag = RequestTag(client.get_req_tag(),
-                                     *client_info,
-                                     req_params,
-                                     time,
-                                     cost,
-                                     anticipation_timeout);
-
-                    // copy tag to previous tag for client
-                    client.update_req_tag(tag, tick);
-                }
-#else
-                const ClientInfo* client_info = client_info_wrapper(client);
+                const ClientInfo *client_info = client_info_wrapper(client);
                 assert(client_info);
-                RequestTag tag(client.get_req_tag(),
-                           *client_info,
-                           req_params,
-                           time,
-                           cost,
-                           anticipation_timeout);
+                tag = RequestTag(client.get_req_tag(),
+                                 *client_info,
+                                 req_params,
+                                 time,
+                                 cost,
+                                 anticipation_timeout);
 
                 // copy tag to previous tag for client
                 client.update_req_tag(tag, tick);
+              }
+#else
+              const ClientInfo* client_info = client_info_wrapper(client);
+              assert(client_info);
+              RequestTag tag(client.get_req_tag(),
+                         *client_info,
+                         req_params,
+                         time,
+                         cost,
+                         anticipation_timeout);
+
+              // copy tag to previous tag for client
+              client.update_req_tag(tag, tick);
 #endif
 
-                client.add_request(tag, client.client, std::move(request));
-                if (1 == client.requests.size()) {
-                    // NB: can the following 4 calls to adjust be changed
-                    // promote? Can adding a request ever demote a client in the
-                    // heaps?
-                    if (client.info->client_type == ClientType::R) {
-                        resv_heap.adjust(client);
-//                        limit_heap.adjust(client);
-                        deltar_heap.adjust(client);
-                    }
-
-                    if (client.info->client_type == ClientType::B) {
-                        limit_heap.adjust(client);
-                        burst_heap.adjust(client);
-                    }
-
-                    if (client.info->client_type == ClientType::A) {
-                        best_heap.adjust(client);
-                    }
-
-//                    prop_heap.adjust(client);
-                }
-
-                client.cur_rho = req_params.rho;
-                client.cur_delta = req_params.delta;
-
+              client.add_request(tag, client.client, std::move(request));
+              if (1 == client.requests.size()) {
+                // NB: can the following 4 calls to adjust be changed
+                // promote? Can adding a request ever demote a client in the
+                // heaps?
                 if (client.info->client_type == ClientType::R) {
-                    resv_heap.adjust(client);
-//                    limit_heap.adjust(client);
-                    deltar_heap.adjust(client);
+                  resv_heap.adjust(client);
+//                        limit_heap.adjust(client);
+                  deltar_heap.adjust(client);
                 }
 
                 if (client.info->client_type == ClientType::B) {
-                    limit_heap.adjust(client);
-                    burst_heap.adjust(client);
+                  limit_heap.adjust(client);
+                  burst_heap.adjust(client);
                 }
 
                 if (client.info->client_type == ClientType::A) {
-                    best_heap.adjust(client);
+                  best_heap.adjust(client);
                 }
+
+//                    prop_heap.adjust(client);
+              }
+
+              client.cur_rho = req_params.rho;
+              client.cur_delta = req_params.delta;
+
+              if (client.info->client_type == ClientType::R) {
+                resv_heap.adjust(client);
+//                    limit_heap.adjust(client);
+                deltar_heap.adjust(client);
+              }
+
+              if (client.info->client_type == ClientType::B) {
+                limit_heap.adjust(client);
+                burst_heap.adjust(client);
+              }
+
+              if (client.info->client_type == ClientType::A) {
+                best_heap.adjust(client);
+              }
 
 //                prop_heap.adjust(client);
             } // add_request
@@ -1237,174 +1252,185 @@ namespace crimson {
             template<typename C1, IndIntruHeapData ClientRec::*C2, typename C3>
             void pop_process_request(IndIntruHeap<C1, ClientRec, C2, C3, B> &heap,
                                      std::function<void(const C &client,
-                                                        RequestRef &request)> process, Time now, bool is_delta = false) {
-                // gain access to data
-                ClientRec &top = heap.top();
+                                                        RequestRef &request)> process, Time now,
+                                     bool is_delta = false) {
+              // gain access to data
+              ClientRec &top = heap.top();
 
-                RequestRef request = std::move(top.next_request().request);
+              RequestRef request = std::move(top.next_request().request);
 #ifndef DO_NOT_DELAY_TAG_CALC
-                RequestTag tag = top.next_request().tag;
+              RequestTag tag = top.next_request().tag;
 #endif
 
-                // pop request and adjust heaps
-                top.pop_request();
+              // pop request and adjust heaps
+              top.pop_request();
 
 #ifndef DO_NOT_DELAY_TAG_CALC
-                if (top.has_request()) {
-                    ClientReq &next_first = top.next_request();
+              if (top.has_request()) {
+                ClientReq &next_first = top.next_request();
 //	  const ClientInfo* client_info = get_cli_info(top);
-                    const ClientInfo *client_info = client_info_wrapper(top);
-                    assert(client_info);
-                    next_first.tag = RequestTag(tag, *client_info,
-                                                top.cur_delta, top.cur_rho,
-                                                next_first.tag.arrival,
-                                                0.0, anticipation_timeout);
+                const ClientInfo *client_info = client_info_wrapper(top);
+                assert(client_info);
+                next_first.tag = RequestTag(tag, *client_info,
+                                            top.cur_delta, top.cur_rho,
+                                            next_first.tag.arrival,
+                                            0.0, anticipation_timeout);
 
-                    // copy tag to previous tag for client
-                    top.update_req_tag(next_first.tag, tick);
-                }
+                // copy tag to previous tag for client
+                top.update_req_tag(next_first.tag, tick);
+              }
 #endif
 //    const ClientInfo* client_info = get_cli_info(top);
-                const ClientInfo *client_info = client_info_wrapper(top);
-                if (client_info->client_type == ClientType::R) {
+              const ClientInfo *client_info = client_info_wrapper(top);
+              if (client_info->client_type == ClientType::R) {
 
-                    if (is_delta /*&& (now - win_start) < win_size*/) {
-                        // top.r0_counter++;
-                        reduce_reservation_tags(top);
-                    }
-                    // else{
-                    //   top.r_counter++;
-                    // }
-                    resv_heap.demote(top);
-                    deltar_heap.demote(top);
+                if (is_delta /*&& (now - win_start) < win_size*/) {
+                  // top.r0_counter++;
+                  reduce_reservation_tags(top);
+                }
+                // else{
+                //   top.r_counter++;
+                // }
+                resv_heap.demote(top);
+                deltar_heap.demote(top);
 //                    limit_heap.adjust(top);
-                }
+              }
 
-                if (client_info->client_type == ClientType::B) {
-                    // if (top.info->client_type == ClientType::B) {
-                    //     top.b_counter++;
-                    // }
-                    burst_heap.demote(top);
-                    limit_heap.adjust(top);
-                }
-                if (client_info->client_type == ClientType::A) {
+              if (client_info->client_type == ClientType::B) {
+                // if (top.info->client_type == ClientType::B) {
+                //     top.b_counter++;
+                // }
+                burst_heap.demote(top);
+                limit_heap.adjust(top);
+              }
+              if (client_info->client_type == ClientType::A) {
                 //   top.be_counter++;
-                    best_heap.demote(top);
-                }
+                best_heap.demote(top);
+              }
 
 //                prop_heap.demote(top);
 
 
-                // TODO: update counter in do_next_request
-                if (now - win_start >= win_size) {
-                ofs.open("/root/swh/result/scheduling.txt", std::ios_base::app);
+              // TODO: update counter in do_next_request
 
-                ofs_pwd.open(s_path.c_str(), std::ios_base::app);
-		  for (auto c : client_map) {
-                      printScheduling(c.second);
-                        c.second->b_counter = 0;
-                        c.second->r0_counter = 0;
-                        c.second->r_counter = 0;
-                        c.second->be_counter = 0;
-                    }
-                    win_start = std::max(win_start + win_size, now);
-                ofs.close();
-                ofs_pwd.close();
-		}
 
-                // process
-                process(top.client, request);
+              // process
+              process(top.client, request);
             } // pop_process_request
 
 
             // data_mtx should be held when called
             void reduce_reservation_tags(ClientRec &client) {
-                for (auto &r : client.requests) {
-                    r.tag.reservation -= client.info->reservation_inv;
+              for (auto &r : client.requests) {
+                r.tag.reservation -= client.info->reservation_inv;
 
 #ifndef DO_NOT_DELAY_TAG_CALC
-                    // reduce only for front tag. because next tags' value are invalid
-                    break;
+                // reduce only for front tag. because next tags' value are invalid
+                break;
 #endif
-                }
-                // don't forget to update previous tag
-                client.prev_tag.reservation -= client.info->reservation_inv;
-                resv_heap.promote(client);
+              }
+              // don't forget to update previous tag
+              client.prev_tag.reservation -= client.info->reservation_inv;
+              resv_heap.promote(client);
             }
 
 
             // data_mtx should be held when called
             void reduce_reservation_tags(const C &client_id) {
-                auto client_it = client_map.find(client_id);
+              auto client_it = client_map.find(client_id);
 
-                // means the client was cleaned from map; should never happen
-                // as long as cleaning times are long enough
-                assert(client_map.end() != client_it);
-                reduce_reservation_tags(*client_it->second);
+              // means the client was cleaned from map; should never happen
+              // as long as cleaning times are long enough
+              assert(client_map.end() != client_it);
+              reduce_reservation_tags(*client_it->second);
             }
 
 
             // data_mtx should be held when called
             NextReq do_next_request(Time now) {
-                // if proportional queue is empty, all are empty (i.e., no
-                // active clients)
-                if (resv_heap.empty() && burst_heap.empty() && best_heap.empty()) {
-                    return NextReq::none();
+              // if proportional queue is empty, all are empty (i.e., no
+              // active clients)
+              if (resv_heap.empty() && burst_heap.empty() && best_heap.empty()) {
+                return NextReq::none();
+              }
+
+              if (now - win_start >= win_size) {
+                ofs.open("/root/swh/result/scheduling.txt", std::ios_base::app);
+
+                ofs_pwd.open(s_path.c_str(), std::ios_base::app);
+                for (auto c : client_map) {
+                  printScheduling(c.second);
+                  c.second->b_counter = 0;
+                  c.second->b_break_limit_counter = 0;
+                  c.second->r0_counter = 0;
+                  c.second->r0_break_limit_counter = 0;
+                  c.second->r_counter = 0;
+                  c.second->be_counter = 0;
+                  c.second->be_break_limit_counter = 0;
                 }
+                win_start = std::max(win_start + win_size, now);
+                ofs.close();
+                ofs_pwd.close();
+              }
 
-                // try constraint (reservation) based scheduling
-                if (!resv_heap.empty()) {
-                    auto &reserv = resv_heap.top();
-                    if (reserv.has_request() &&
-                        reserv.next_request().tag.reservation <= now) {
-                        return NextReq(HeapId::reservation);
-                    }
+
+              // try constraint (reservation) based scheduling
+              if (!resv_heap.empty()) {
+                auto &reserv = resv_heap.top();
+//                    reserv.r_counter = 0;
+                if (reserv.has_request() &&
+                    reserv.next_request().tag.reservation <= now) {
+                  reserv.r_counter++;
+                  return NextReq(HeapId::reservation);
                 }
+              }
 
-                // no existing reservations before now, so try weight-based
-                // scheduling
+              // no existing reservations before now, so try weight-based
+              // scheduling
 
-                // all items that are within limit are eligible based on
-                // priority
-                if (!limit_heap.empty()) {
-                    auto limits = &limit_heap.top();
-                    while (limits->has_request() &&
-                           !limits->next_request().tag.ready &&
-                           limits->next_request().tag.limit <= now) {
-                        limits->next_request().tag.ready = true;
+              // all items that are within limit are eligible based on
+              // priority
+              if (!limit_heap.empty()) {
+                auto limits = &limit_heap.top();
+                while (limits->has_request() &&
+                       !limits->next_request().tag.ready &&
+                       limits->next_request().tag.limit <= now) {
+                  limits->next_request().tag.ready = true;
 //                        if (limits->info->client_type == ClientType::R) {
 //                            deltar_heap.promote(*limits);
 //                        }
 //                        if (limits->info->client_type == ClientType::B) {
-                            burst_heap.promote(*limits);
+                  burst_heap.promote(*limits);
 //                        }
 //                        prop_heap.promote(*limits);
-                        limit_heap.demote(*limits);
+                  limit_heap.demote(*limits);
 
-                        limits = &limit_heap.top();
-                    }
+                  limits = &limit_heap.top();
                 }
+              }
 
-                // try burst based scheduling
-                if (!burst_heap.empty()) {
-                    auto &bursts = burst_heap.top();
-                    if (bursts.b_counter < std::max(bursts.resource, 0.0) &&
-                        bursts.has_request() &&
-                        bursts.next_request().tag.ready &&
-                        bursts.next_request().tag.proportion < max_tag) {
-                        return NextReq(HeapId::burst);
-                    }
+              // try burst based scheduling
+              if (!burst_heap.empty()) {
+                auto &bursts = burst_heap.top();
+                if (bursts.b_counter < std::max(bursts.resource, 0.0) &&
+                    bursts.has_request() &&
+                    bursts.next_request().tag.ready &&
+                    bursts.next_request().tag.proportion < max_tag) {
+                  bursts.b_counter++;
+                  return NextReq(HeapId::burst);
                 }
+              }
 
-                if (!deltar_heap.empty()) {
-                    auto &deltar = deltar_heap.top();
-                    if (deltar.r0_counter < std::max(deltar.resource - deltar.info->reservation * win_size, 0.0) &&
-                        deltar.has_request() &&
-//                        deltar.next_request().tag.ready &&
-                        deltar.next_request().tag.proportion < max_tag) {
-                        return NextReq(HeapId::deltar);
-                    }
+              if (!deltar_heap.empty()) {
+                auto &deltar = deltar_heap.top();
+                if (deltar.r0_counter < std::max(deltar.resource - deltar.info->reservation * win_size, 0.0) &&
+                    deltar.has_request() &&
+                    //                        deltar.next_request().tag.ready &&
+                    deltar.next_request().tag.proportion < max_tag) {
+                  deltar.r0_counter++;
+                  return NextReq(HeapId::deltar);
                 }
+              }
 
 
 //                auto &props = prop_heap.top();
@@ -1425,68 +1451,72 @@ namespace crimson {
 //                    }
 //                }
 
+              if (!best_heap.empty()) {
+                auto &bests = best_heap.top();
+                if (bests.has_request() && bests.next_request().tag.proportion < max_tag) {
+                  bests.be_counter++;
+                  return NextReq(HeapId::best_effort);
+                }
+              }
+
+              // if nothing is scheduled by reservation or
+              // proportion/weight, and if we allow limit break, try to
+              // schedule something with the lowest proportion tag or
+              // alternatively lowest reservation tag.
+              if (allow_limit_break) {
+                if (!deltar_heap.empty()) {
+                  auto &deltar = deltar_heap.top();
+                  if (deltar.has_request() &&
+                      deltar.next_request().tag.proportion < max_tag) {
+                    deltar.r0_break_limit_counter++;
+                    return NextReq(HeapId::deltar);
+                  }
+                  // auto &reserv = resv_heap.top();
+                  // if (reserv.has_request() &&
+                  //     reserv.next_request().tag.reservation < max_tag) {
+                  //     return NextReq(HeapId::reservation);
+                  // }
+                }
+                if (!burst_heap.empty()) {
+                  auto &bursts = burst_heap.top();
+                  if (bursts.has_request() &&
+                      bursts.next_request().tag.proportion < max_tag) {
+                    bursts.b_break_limit_counter++;
+                    return NextReq(HeapId::burst);
+                  }
+                }
                 if (!best_heap.empty()) {
-                    auto &bests = best_heap.top();
-                    if (bests.has_request() && bests.next_request().tag.proportion < max_tag) {
-                        return NextReq(HeapId::best_effort);
-                    }
+                  auto &bests = best_heap.top();
+                  if (bests.has_request() &&
+                      bests.next_request().tag.proportion < max_tag) {
+                    bests.be_break_limit_counter++;
+                    return NextReq(HeapId::best_effort);
+                  }
                 }
+              }
 
-                // if nothing is scheduled by reservation or
-                // proportion/weight, and if we allow limit break, try to
-                // schedule something with the lowest proportion tag or
-                // alternatively lowest reservation tag.
-                if (allow_limit_break) {
-                    if (!deltar_heap.empty()) {
-                        auto &deltar = deltar_heap.top();
-                        if (deltar.has_request() &&
-                            deltar.next_request().tag.proportion < max_tag) {
-                            return NextReq(HeapId::deltar);
-                        }
-                        // auto &reserv = resv_heap.top();
-                        // if (reserv.has_request() &&
-                        //     reserv.next_request().tag.reservation < max_tag) {
-                        //     return NextReq(HeapId::reservation);
-                        // }
-                    }
-                    if (!burst_heap.empty()) {
-                        auto &bursts = burst_heap.top();
-                        if (bursts.has_request() &&
-                            bursts.next_request().tag.proportion < max_tag) {
-                            return NextReq(HeapId::burst);
-                        }
-                    }
-                    if (!best_heap.empty()) {
-                        auto &bests = best_heap.top();
-                        if (bests.has_request() &&
-                            bests.next_request().tag.proportion < max_tag) {
-                            return NextReq(HeapId::best_effort);
-                        }
-                    }
+              // nothing scheduled; make sure we re-run when next
+              // reservation item or next limited item comes up
+              Time next_call = TimeMax;
+              if (!resv_heap.empty()) {
+                if (resv_heap.top().has_request()) {
+                  next_call =
+                          min_not_0_time(next_call,
+                                         resv_heap.top().next_request().tag.reservation);
                 }
-
-                // nothing scheduled; make sure we re-run when next
-                // reservation item or next limited item comes up
-                Time next_call = TimeMax;
-                if (!resv_heap.empty()) {
-                    if (resv_heap.top().has_request()) {
-                        next_call =
-                                min_not_0_time(next_call,
-                                               resv_heap.top().next_request().tag.reservation);
-                    }
-                } else if (!limit_heap.empty()) {
-                    if (limit_heap.top().has_request()) {
-                        const auto &next = limit_heap.top().next_request();
-                        assert(!next.tag.ready || max_tag == next.tag.proportion ||
-                               limit_heap.top().info->client_type == ClientType::B);
-                        next_call = min_not_0_time(next_call, next.tag.limit);
-                    }
+              } else if (!limit_heap.empty()) {
+                if (limit_heap.top().has_request()) {
+                  const auto &next = limit_heap.top().next_request();
+                  assert(!next.tag.ready || max_tag == next.tag.proportion ||
+                         limit_heap.top().info->client_type == ClientType::B);
+                  next_call = min_not_0_time(next_call, next.tag.limit);
                 }
-                if (next_call < TimeMax) {
-                    return NextReq(next_call);
-                } else {
-                    return NextReq::none();
-                }
+              }
+              if (next_call < TimeMax) {
+                return NextReq(next_call);
+              } else {
+                return NextReq::none();
+              }
             } // do_next_request
 
 
@@ -1495,7 +1525,7 @@ namespace crimson {
             // the minimal time but ignoring zero
             static inline const Time &min_not_0_time(const Time &current,
                                                      const Time &possible) {
-                return TimeZero == possible ? current : std::min(current, possible);
+              return TimeZero == possible ? current : std::min(current, possible);
             }
 
 
@@ -1508,43 +1538,43 @@ namespace crimson {
              * that mark point.
              */
             void do_clean() {
-                TimePoint now = std::chrono::steady_clock::now();
-                DataGuard g(data_mtx);
-                clean_mark_points.emplace_back(MarkPoint(now, tick));
+              TimePoint now = std::chrono::steady_clock::now();
+              DataGuard g(data_mtx);
+              clean_mark_points.emplace_back(MarkPoint(now, tick));
 
-                // first erase the super-old client records
+              // first erase the super-old client records
 
-                Counter erase_point = 0;
-                auto point = clean_mark_points.front();
-                while (point.first <= now - erase_age) {
-                    erase_point = point.second;
-                    clean_mark_points.pop_front();
-                    point = clean_mark_points.front();
+              Counter erase_point = 0;
+              auto point = clean_mark_points.front();
+              while (point.first <= now - erase_age) {
+                erase_point = point.second;
+                clean_mark_points.pop_front();
+                point = clean_mark_points.front();
+              }
+
+              Counter idle_point = 0;
+              for (auto i : clean_mark_points) {
+                if (i.first <= now - idle_age) {
+                  idle_point = i.second;
+                } else {
+                  break;
                 }
+              }
 
-                Counter idle_point = 0;
-                for (auto i : clean_mark_points) {
-                    if (i.first <= now - idle_age) {
-                        idle_point = i.second;
-                    } else {
-                        break;
-                    }
-                }
-
-                if (erase_point > 0 || idle_point > 0) {
-                    for (auto i = client_map.begin(); i != client_map.end(); /* empty */) {
-                        auto i2 = i++;
-                        if (erase_point && i2->second->last_tick <= erase_point) {
-                            delete_from_heaps(i2->second);
-                            client_map.erase(i2);
-                            //reduce_total_wgt(i2->second->info->weight);
-                            reduce_total_reserv(i2->second->info->reservation);
-                            update_client_res();
-                        } else if (idle_point && i2->second->last_tick <= idle_point) {
-                            i2->second->idle = true;
-                        }
-                    } // for
-                } // if
+              if (erase_point > 0 || idle_point > 0) {
+                for (auto i = client_map.begin(); i != client_map.end(); /* empty */) {
+                  auto i2 = i++;
+                  if (erase_point && i2->second->last_tick <= erase_point) {
+                    delete_from_heaps(i2->second);
+                    client_map.erase(i2);
+                    //reduce_total_wgt(i2->second->info->weight);
+                    reduce_total_reserv(i2->second->info->reservation);
+                    update_client_res();
+                  } else if (idle_point && i2->second->last_tick <= idle_point) {
+                    i2->second->idle = true;
+                  }
+                } // for
+              } // if
             } // do_clean
 
 
@@ -1552,74 +1582,74 @@ namespace crimson {
             template<IndIntruHeapData ClientRec::*C1, typename C2>
             void delete_from_heap(ClientRecRef &client,
                                   c::IndIntruHeap<ClientRecRef, ClientRec, C1, C2, B> &heap) {
-                auto i = heap.rfind(client);
-                heap.remove(i);
+              auto i = heap.rfind(client);
+              heap.remove(i);
             }
 
 
             // data_mtx must be held by caller
             void delete_from_heaps(ClientRecRef &client) {
-                if (client->info->client_type == ClientType::R) {
-                    delete_from_heap(client, resv_heap);
-                    delete_from_heap(client, deltar_heap);
+              if (client->info->client_type == ClientType::R) {
+                delete_from_heap(client, resv_heap);
+                delete_from_heap(client, deltar_heap);
 //                    delete_from_heap(client, limit_heap);
-                }
-                if (client->info->client_type == ClientType::A) {
-                    delete_from_heap(client, best_heap);
-                }
-                if (client->info->client_type == ClientType::B) {
-                    delete_from_heap(client, limit_heap);
-                    delete_from_heap(client, burst_heap);
-                }
+              }
+              if (client->info->client_type == ClientType::A) {
+                delete_from_heap(client, best_heap);
+              }
+              if (client->info->client_type == ClientType::B) {
+                delete_from_heap(client, limit_heap);
+                delete_from_heap(client, burst_heap);
+              }
 //                delete_from_heap(client, prop_heap);
             }
 
             void set_win_size(Time _win_size) {
-                win_size = _win_size;
+              win_size = _win_size;
             }
 
             void set_sys_cap(double _system_capacity) {
-                system_capacity = _system_capacity;
+              system_capacity = _system_capacity;
             }
 
             size_t get_client_num() {
-                return client_map.size();
+              return client_map.size();
             }
 
             void update_client_res() {
-                for (auto c: client_map) {
-                    c.second->resource = system_capacity * c.second->info->weight * win_size / total_wgt;
-                    if (c.second->info->client_type == ClientType::R) {
-                        c.second->dlimit = system_capacity * c.second->info->weight / total_wgt;
-                        c.second->deltar = c.second->dlimit > c.second->info->reservation ? c.second->dlimit -
-                                                                                            c.second->info->reservation
-                                                                                          : 0;
+              for (auto c: client_map) {
+                c.second->resource = system_capacity * c.second->info->weight * win_size / total_wgt;
+                if (c.second->info->client_type == ClientType::R) {
+                  c.second->dlimit = system_capacity * c.second->info->weight / total_wgt;
+                  c.second->deltar = c.second->dlimit > c.second->info->reservation ? c.second->dlimit -
+                                                                                      c.second->info->reservation
+                                                                                    : 0;
 //                        c.second->deltar = c.second->info->weight;
-                        c.second->dlimit = 0;
-                    }
+                  c.second->dlimit = 0;
                 }
+              }
             }
 
             void add_total_wgt(double wgt) {
-                total_wgt += wgt;
+              total_wgt += wgt;
             }
 
             void add_total_reserv(double reserv) {
-                total_res += reserv;
+              total_res += reserv;
             }
 
             void reduce_total_wgt(double wgt) {
-                if (total_wgt > wgt) total_wgt -= wgt;
+              if (total_wgt > wgt) total_wgt -= wgt;
             }
 
             void reduce_total_reserv(double reserv) {
-                if (total_res >= reserv) total_res -= reserv;
-                else total_res = 0;
+              if (total_res >= reserv) total_res -= reserv;
+              else total_res = 0;
             }
 
             ClientInfo *get_real_client_info(const ClientRec &client) {
-                ClientInfo new_client = ClientInfo(client.info->reservation, client.deltar, client.dlimit);
-                return &new_client;
+              ClientInfo new_client = ClientInfo(client.info->reservation, client.deltar, client.dlimit);
+              return &new_client;
             }
         }; // class PriorityQueueBase
 
@@ -1646,7 +1676,7 @@ namespace crimson {
                 bool is_retn() const { return type == super::NextReqType::returning; }
 
                 Retn &get_retn() {
-                    return boost::get<Retn>(data);
+                  return boost::get<Retn>(data);
                 }
 
                 bool is_future() const { return type == super::NextReqType::future; }
@@ -1670,7 +1700,7 @@ namespace crimson {
                     super(_client_info_f,
                           _idle_age, _erase_age, _check_time,
                           _allow_limit_break, _anticipation_timeout) {
-                // empty
+              // empty
             }
 
             template<typename Rep, typename Per>
@@ -1686,7 +1716,7 @@ namespace crimson {
                           _idle_age, _erase_age, _check_time,
                           _allow_limit_break, _anticipation_timeout, _system_capacity,
                           _mclock_win_size) {
-                // empty
+              // empty
             }
 
             // pull convenience constructor
@@ -1699,7 +1729,7 @@ namespace crimson {
                                       std::chrono::minutes(6),
                                       _allow_limit_break,
                                       _anticipation_timeout) {
-                // empty
+              // empty
             }
 
             // pull convenience constructor
@@ -1715,30 +1745,30 @@ namespace crimson {
                                       _mclock_win_size,
                                       _allow_limit_break,
                                       _anticipation_timeout) {
-                // empty
+              // empty
             }
 
             inline void add_request(R &&request,
                                     const C &client_id,
                                     const ReqParams &req_params,
                                     double addl_cost = 0.0) {
-                add_request(typename super::RequestRef(new R(std::move(request))),
-                            client_id,
-                            req_params,
-                            get_time(),
-                            addl_cost);
+              add_request(typename super::RequestRef(new R(std::move(request))),
+                          client_id,
+                          req_params,
+                          get_time(),
+                          addl_cost);
             }
 
 
             inline void add_request(R &&request,
                                     const C &client_id,
                                     double addl_cost = 0.0) {
-                static const ReqParams null_req_params;
-                add_request(typename super::RequestRef(new R(std::move(request))),
-                            client_id,
-                            null_req_params,
-                            get_time(),
-                            addl_cost);
+              static const ReqParams null_req_params;
+              add_request(typename super::RequestRef(new R(std::move(request))),
+                          client_id,
+                          null_req_params,
+                          get_time(),
+                          addl_cost);
             }
 
 
@@ -1747,11 +1777,11 @@ namespace crimson {
                                          const ReqParams &req_params,
                                          const Time time,
                                          double addl_cost = 0.0) {
-                add_request(typename super::RequestRef(new R(std::move(request))),
-                            client_id,
-                            req_params,
-                            time,
-                            addl_cost);
+              add_request(typename super::RequestRef(new R(std::move(request))),
+                          client_id,
+                          req_params,
+                          time,
+                          addl_cost);
             }
 
 
@@ -1759,15 +1789,15 @@ namespace crimson {
                                     const C &client_id,
                                     const ReqParams &req_params,
                                     double addl_cost = 0.0) {
-                add_request(request, req_params, client_id, get_time(), addl_cost);
+              add_request(request, req_params, client_id, get_time(), addl_cost);
             }
 
 
             inline void add_request(typename super::RequestRef &&request,
                                     const C &client_id,
                                     double addl_cost = 0.0) {
-                static const ReqParams null_req_params;
-                add_request(request, null_req_params, client_id, get_time(), addl_cost);
+              static const ReqParams null_req_params;
+              add_request(request, null_req_params, client_id, get_time(), addl_cost);
             }
 
 
@@ -1777,99 +1807,99 @@ namespace crimson {
                              const ReqParams &req_params,
                              const Time time,
                              double addl_cost = 0.0) {
-                typename super::DataGuard g(this->data_mtx);
+              typename super::DataGuard g(this->data_mtx);
 #ifdef PROFILE
-                add_request_timer.start();
+              add_request_timer.start();
 #endif
-                super::do_add_request(std::move(request),
-                                      client_id,
-                                      req_params,
-                                      time,
-                                      addl_cost);
-                // no call to schedule_request for pull version
+              super::do_add_request(std::move(request),
+                                    client_id,
+                                    req_params,
+                                    time,
+                                    addl_cost);
+              // no call to schedule_request for pull version
 #ifdef PROFILE
-                add_request_timer.stop();
+              add_request_timer.stop();
 #endif
             }
 
 
             inline PullReq pull_request() {
-                return pull_request(get_time());
+              return pull_request(get_time());
             }
 
             PullReq pull_request(Time now) {
-                PullReq result;
-                typename super::DataGuard g(this->data_mtx);
+              PullReq result;
+              typename super::DataGuard g(this->data_mtx);
 #ifdef PROFILE
-                pull_request_timer.start();
+              pull_request_timer.start();
 #endif
 
-                typename super::NextReq next = super::do_next_request(now);
-                result.type = next.type;
-                switch (next.type) {
-                    case super::NextReqType::none:
-                        return result;
-                    case super::NextReqType::future:
-                        result.data = next.when_ready;
-                        return result;
-                    case super::NextReqType::returning:
-                        // to avoid nesting, break out and let code below handle this case
-                        break;
-                    default:
-                        assert(false);
-                }
+              typename super::NextReq next = super::do_next_request(now);
+              result.type = next.type;
+              switch (next.type) {
+                case super::NextReqType::none:
+                  return result;
+                case super::NextReqType::future:
+                  result.data = next.when_ready;
+                  return result;
+                case super::NextReqType::returning:
+                  // to avoid nesting, break out and let code below handle this case
+                  break;
+                default:
+                  assert(false);
+              }
 
-                // we'll only get here if we're returning an entry
+              // we'll only get here if we're returning an entry
 
-                auto process_f =
-                        [&](PullReq &pull_result, PhaseType phase) ->
-                                std::function<void(const C &,
-                                                   typename super::RequestRef &)> {
-                            return [&pull_result, phase](const C &client,
-                                                         typename super::RequestRef &request) {
-                                pull_result.data =
-                                        typename PullReq::Retn{client, std::move(request), phase};
-                            };
-                        };
+              auto process_f =
+                      [&](PullReq &pull_result, PhaseType phase) ->
+                              std::function<void(const C &,
+                                                 typename super::RequestRef &)> {
+                          return [&pull_result, phase](const C &client,
+                                                       typename super::RequestRef &request) {
+                              pull_result.data =
+                                      typename PullReq::Retn{client, std::move(request), phase};
+                          };
+                      };
 
-                switch (next.heap_id) {
-                    case super::HeapId::reservation:
-                        super::pop_process_request(this->resv_heap,
-                                                   process_f(result, PhaseType::reservation), now);
-                        ++this->reserv_sched_count;
-                        break;
-                    case super::HeapId::deltar:
-                        super::pop_process_request(this->deltar_heap,
-                                                   process_f(result, PhaseType::priority), now, true);
+              switch (next.heap_id) {
+                case super::HeapId::reservation:
+                  super::pop_process_request(this->resv_heap,
+                                             process_f(result, PhaseType::reservation), now);
+                  ++this->reserv_sched_count;
+                  break;
+                case super::HeapId::deltar:
+                  super::pop_process_request(this->deltar_heap,
+                                             process_f(result, PhaseType::priority), now, true);
 //                        { // need to use retn temporarily
 //                            auto &retn = boost::get<typename PullReq::Retn>(result.data);
 //                            super::reduce_reservation_tags(retn.client);
 //                        }
-                        ++this->prop_sched_count;
-                        break;
-                    case super::HeapId::burst:
-                        super::pop_process_request(this->burst_heap,
-                                                   process_f(result, PhaseType::priority), now);
-                        ++this->prop_sched_count;
-                        break;
-                    case super::HeapId::best_effort:
-                        super::pop_process_request(this->best_heap,
-                                                   process_f(result, PhaseType::priority), now);
-                        ++this->prop_sched_count;
-                        break;
+                  ++this->prop_sched_count;
+                  break;
+                case super::HeapId::burst:
+                  super::pop_process_request(this->burst_heap,
+                                             process_f(result, PhaseType::priority), now);
+                  ++this->prop_sched_count;
+                  break;
+                case super::HeapId::best_effort:
+                  super::pop_process_request(this->best_heap,
+                                             process_f(result, PhaseType::priority), now);
+                  ++this->prop_sched_count;
+                  break;
 //                    case super::HeapId::prop:
 //                        super::pop_process_request(this->prop_heap,
 //                                                   process_f(result, PhaseType::priority), now, true);
 //                        ++this->prop_sched_count;
 //                        break;
-                    default:
-                        assert(false);
-                }
+                default:
+                  assert(false);
+              }
 
 #ifdef PROFILE
-                pull_request_timer.stop();
+              pull_request_timer.stop();
 #endif
-                return result;
+              return result;
             } // pull_request
 
 
@@ -1880,7 +1910,7 @@ namespace crimson {
             // function has to be repeated in both push & pull
             // specializations
             typename super::NextReq next_request() {
-                return next_request(get_time());
+              return next_request(get_time());
             }
         }; // class PullPriorityQueue
 
@@ -1938,9 +1968,9 @@ namespace crimson {
                     super(_client_info_f,
                           _idle_age, _erase_age, _check_time,
                           _allow_limit_break, anticipation_timeout) {
-                can_handle_f = _can_handle_f;
-                handle_f = _handle_f;
-                sched_ahead_thd = std::thread(&PushPriorityQueue::run_sched_ahead, this);
+              can_handle_f = _can_handle_f;
+              handle_f = _handle_f;
+              sched_ahead_thd = std::thread(&PushPriorityQueue::run_sched_ahead, this);
             }
 
             template<typename Rep, typename Per>
@@ -1957,9 +1987,9 @@ namespace crimson {
                     super(_client_info_f,
                           _idle_age, _erase_age, _check_time, _allow_limit_break, anticipation_timeout,
                           _system_capacity, _mclock_win_size) {
-                can_handle_f = _can_handle_f;
-                handle_f = _handle_f;
-                sched_ahead_thd = std::thread(&PushPriorityQueue::run_sched_ahead, this);
+              can_handle_f = _can_handle_f;
+              handle_f = _handle_f;
+              sched_ahead_thd = std::thread(&PushPriorityQueue::run_sched_ahead, this);
             }
 
 
@@ -1977,7 +2007,7 @@ namespace crimson {
                                       std::chrono::minutes(6),
                                       _allow_limit_break,
                                       _anticipation_timeout) {
-                // empty
+              // empty
             }
 
             PushPriorityQueue(typename super::ClientInfoFunc _client_info_f,
@@ -1997,13 +2027,13 @@ namespace crimson {
                                       _mclock_win_size,
                                       _allow_limit_break,
                                       _anticipation_timeout) {
-                // empty
+              // empty
             }
 
             ~PushPriorityQueue() {
-                this->finishing = true;
-                sched_ahead_cv.notify_one();
-                sched_ahead_thd.join();
+              this->finishing = true;
+              sched_ahead_cv.notify_one();
+              sched_ahead_thd.join();
             }
 
         public:
@@ -2012,11 +2042,11 @@ namespace crimson {
                                     const C &client_id,
                                     const ReqParams &req_params,
                                     double addl_cost = 0.0) {
-                add_request(typename super::RequestRef(new R(std::move(request))),
-                            client_id,
-                            req_params,
-                            get_time(),
-                            addl_cost);
+              add_request(typename super::RequestRef(new R(std::move(request))),
+                          client_id,
+                          req_params,
+                          get_time(),
+                          addl_cost);
             }
 
 
@@ -2024,7 +2054,7 @@ namespace crimson {
                                     const C &client_id,
                                     const ReqParams &req_params,
                                     double addl_cost = 0.0) {
-                add_request(request, req_params, client_id, get_time(), addl_cost);
+              add_request(request, req_params, client_id, get_time(), addl_cost);
             }
 
 
@@ -2033,11 +2063,11 @@ namespace crimson {
                                          const ReqParams &req_params,
                                          const Time time,
                                          double addl_cost = 0.0) {
-                add_request(typename super::RequestRef(new R(request)),
-                            client_id,
-                            req_params,
-                            time,
-                            addl_cost);
+              add_request(typename super::RequestRef(new R(request)),
+                          client_id,
+                          req_params,
+                          time,
+                          addl_cost);
             }
 
 
@@ -2046,30 +2076,30 @@ namespace crimson {
                              const ReqParams &req_params,
                              const Time time,
                              double addl_cost = 0.0) {
-                typename super::DataGuard g(this->data_mtx);
+              typename super::DataGuard g(this->data_mtx);
 #ifdef PROFILE
-                add_request_timer.start();
+              add_request_timer.start();
 #endif
-                super::do_add_request(std::move(request),
-                                      client_id,
-                                      req_params,
-                                      time,
-                                      addl_cost);
-                schedule_request();
+              super::do_add_request(std::move(request),
+                                    client_id,
+                                    req_params,
+                                    time,
+                                    addl_cost);
+              schedule_request();
 #ifdef PROFILE
-                add_request_timer.stop();
+              add_request_timer.stop();
 #endif
             }
 
 
             void request_completed() {
-                typename super::DataGuard g(this->data_mtx);
+              typename super::DataGuard g(this->data_mtx);
 #ifdef PROFILE
-                request_complete_timer.start();
+              request_complete_timer.start();
 #endif
-                schedule_request();
+              schedule_request();
 #ifdef PROFILE
-                request_complete_timer.stop();
+              request_complete_timer.stop();
 #endif
             }
 
@@ -2091,15 +2121,15 @@ namespace crimson {
                     uint B4>
             C submit_top_request(IndIntruHeap<C1, typename super::ClientRec, C2, C3, B4> &heap,
                                  PhaseType phase) {
-                C client_result;
-                super::pop_process_request(heap,
-                                           [this, phase, &client_result]
-                                                   (const C &client,
-                                                    typename super::RequestRef &request) {
-                                               client_result = client;
-                                               handle_f(client, std::move(request), phase);
-                                           }, get_time());
-                return client_result;
+              C client_result;
+              super::pop_process_request(heap,
+                                         [this, phase, &client_result]
+                                                 (const C &client,
+                                                  typename super::RequestRef &request) {
+                                             client_result = client;
+                                             handle_f(client, std::move(request), phase);
+                                         }, get_time());
+              return client_result;
             }
 
             template<typename C1,
@@ -2108,52 +2138,52 @@ namespace crimson {
                     uint B4>
             C submit_top_request(IndIntruHeap<C1, typename super::ClientRec, C2, C3, B4> &heap,
                                  PhaseType phase, bool is_delta) {
-                C client_result;
-                super::pop_process_request(heap,
-                                           [this, phase, &client_result]
-                                                   (const C &client,
-                                                    typename super::RequestRef &request) {
-                                               client_result = client;
-                                               handle_f(client, std::move(request), phase);
-                                           }, get_time(), is_delta);
-                return client_result;
+              C client_result;
+              super::pop_process_request(heap,
+                                         [this, phase, &client_result]
+                                                 (const C &client,
+                                                  typename super::RequestRef &request) {
+                                             client_result = client;
+                                             handle_f(client, std::move(request), phase);
+                                         }, get_time(), is_delta);
+              return client_result;
             }
 
 
             // data_mtx should be held when called
             void submit_request(typename super::HeapId heap_id) {
 //                C client;
-                switch (heap_id) {
-                    case super::HeapId::reservation:
-                        // don't need to note client
-                        (void) submit_top_request(this->resv_heap, PhaseType::reservation);
-                        // unlike the other two cases, we do not reduce reservation
-                        // tags here
-                        ++this->reserv_sched_count;
-                        break;
-                    case super::HeapId::deltar:
-                        // don't need to note client
-                        // unlike the other two cases, we do not reduce reservation
-                        (void) submit_top_request(this->deltar_heap, PhaseType::priority, true);
+              switch (heap_id) {
+                case super::HeapId::reservation:
+                  // don't need to note client
+                  (void) submit_top_request(this->resv_heap, PhaseType::reservation);
+                  // unlike the other two cases, we do not reduce reservation
+                  // tags here
+                  ++this->reserv_sched_count;
+                  break;
+                case super::HeapId::deltar:
+                  // don't need to note client
+                  // unlike the other two cases, we do not reduce reservation
+                  (void) submit_top_request(this->deltar_heap, PhaseType::priority, true);
 //                        super::reduce_reservation_tags(client);
-                        // tags here
-                        ++this->prop_sched_count;
-                        break;
-                    case super::HeapId::burst:
-                        (void) submit_top_request(this->burst_heap, PhaseType::priority);
-                        ++this->prop_sched_count;
-                        break;
-                    case super::HeapId::best_effort:
-                        (void) submit_top_request(this->best_heap, PhaseType::priority);
-                        ++this->prop_sched_count;
-                        break;
+                  // tags here
+                  ++this->prop_sched_count;
+                  break;
+                case super::HeapId::burst:
+                  (void) submit_top_request(this->burst_heap, PhaseType::priority);
+                  ++this->prop_sched_count;
+                  break;
+                case super::HeapId::best_effort:
+                  (void) submit_top_request(this->best_heap, PhaseType::priority);
+                  ++this->prop_sched_count;
+                  break;
 //                    case super::HeapId::prop:
 //                        (void) submit_top_request(this->prop_heap, PhaseType::priority, true);
 //                        ++this->prop_sched_count;
 //                        break;
-                    default:
-                        assert(false);
-                }
+                default:
+                  assert(false);
+              }
             } // submit_request
 
 
@@ -2161,7 +2191,7 @@ namespace crimson {
             // function has to be repeated in both push & pull
             // specializations
             typename super::NextReq next_request() {
-                return next_request(get_time());
+              return next_request(get_time());
             }
 
 
@@ -2169,70 +2199,70 @@ namespace crimson {
             // function in base class to add check for whether a request can
             // be pushed to the server
             typename super::NextReq next_request(Time now) {
-                if (!can_handle_f()) {
-                    typename super::NextReq result;
-                    result.type = super::NextReqType::none;
-                    return result;
-                } else {
-                    return super::do_next_request(now);
-                }
+              if (!can_handle_f()) {
+                typename super::NextReq result;
+                result.type = super::NextReqType::none;
+                return result;
+              } else {
+                return super::do_next_request(now);
+              }
             } // next_request
 
 
             // data_mtx should be held when called
             void schedule_request() {
-                typename super::NextReq next_req = next_request();
-                switch (next_req.type) {
-                    case super::NextReqType::none:
-                        return;
-                    case super::NextReqType::future:
-                        sched_at(next_req.when_ready);
-                        break;
-                    case super::NextReqType::returning:
-                        submit_request(next_req.heap_id);
-                        break;
-                    default:
-                        assert(false);
-                }
+              typename super::NextReq next_req = next_request();
+              switch (next_req.type) {
+                case super::NextReqType::none:
+                  return;
+                case super::NextReqType::future:
+                  sched_at(next_req.when_ready);
+                  break;
+                case super::NextReqType::returning:
+                  submit_request(next_req.heap_id);
+                  break;
+                default:
+                  assert(false);
+              }
             }
 
 
             // this is the thread that handles running schedule_request at
             // future times when nothing can be scheduled immediately
             void run_sched_ahead() {
-                std::unique_lock<std::mutex> l(sched_ahead_mtx);
+              std::unique_lock<std::mutex> l(sched_ahead_mtx);
 
-                while (!this->finishing) {
-                    if (TimeZero == sched_ahead_when) {
-                        sched_ahead_cv.wait(l);
-                    } else {
-                        Time now;
-                        while (!this->finishing && (now = get_time()) < sched_ahead_when) {
-                            long microseconds_l = long(1 + 1000000 * (sched_ahead_when - now));
-                            auto microseconds = std::chrono::microseconds(microseconds_l);
-                            sched_ahead_cv.wait_for(l, microseconds);
-                        }
-                        sched_ahead_when = TimeZero;
-                        if (this->finishing) return;
+              while (!this->finishing) {
+                if (TimeZero == sched_ahead_when) {
+                  sched_ahead_cv.wait(l);
+                } else {
+                  Time now;
+                  while (!this->finishing && (now = get_time()) < sched_ahead_when) {
+                    long microseconds_l = long(1 + 1000000 * (sched_ahead_when - now));
+                    auto microseconds = std::chrono::microseconds(microseconds_l);
+                    sched_ahead_cv.wait_for(l, microseconds);
+                  }
+                  sched_ahead_when = TimeZero;
+                  if (this->finishing) return;
 
-                        l.unlock();
-                        if (!this->finishing) {
-                            typename super::DataGuard g(this->data_mtx);
-                            schedule_request();
-                        }
-                        l.lock();
-                    }
+                  l.unlock();
+                  if (!this->finishing) {
+                    typename super::DataGuard g(this->data_mtx);
+                    schedule_request();
+                  }
+                  l.lock();
                 }
+              }
             }
 
 
             void sched_at(Time when) {
-                std::lock_guard<std::mutex> l(sched_ahead_mtx);
-                if (this->finishing) return;
-                if (TimeZero == sched_ahead_when || when < sched_ahead_when) {
-                    sched_ahead_when = when;
-                    sched_ahead_cv.notify_one();
-                }
+              std::lock_guard<std::mutex> l(sched_ahead_mtx);
+              if (this->finishing) return;
+              if (TimeZero == sched_ahead_when || when < sched_ahead_when) {
+                sched_ahead_when = when;
+                sched_ahead_cv.notify_one();
+              }
             }
         }; // class PushPriorityQueue
 
