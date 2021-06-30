@@ -64,6 +64,8 @@
 // #include <unistd.h>
 #include <arpa/inet.h>
 
+#include <atomic>
+
 #include <boost/variant.hpp>
 
 #include "indirect_intrusive_heap.h"
@@ -375,7 +377,7 @@ namespace crimson {
 
                 double resource;
                 // r0 counter
-                uint32_t r0_counter = 0;
+                std::atomic_uint r0_counter = 0;
                 double deltar;
                 double dlimit;
                 // burst request counter
@@ -1267,26 +1269,26 @@ namespace crimson {
                 if (client_info->client_type == ClientType::R) {
 
                     if (is_delta /*&& (now - win_start) < win_size*/) {
-                        top.r0_counter++;
+                        // top.r0_counter++;
                         reduce_reservation_tags(top);
                     }
-                    else{
-                      top.r_counter++;
-                    }
+                    // else{
+                    //   top.r_counter++;
+                    // }
                     resv_heap.demote(top);
                     deltar_heap.demote(top);
 //                    limit_heap.adjust(top);
                 }
 
                 if (client_info->client_type == ClientType::B) {
-                    if (top.info->client_type == ClientType::B) {
-                        top.b_counter++;
-                    }
+                    // if (top.info->client_type == ClientType::B) {
+                    //     top.b_counter++;
+                    // }
                     burst_heap.demote(top);
                     limit_heap.adjust(top);
                 }
                 if (client_info->client_type == ClientType::A) {
-                  top.be_counter++;
+                //   top.be_counter++;
                     best_heap.demote(top);
                 }
 
@@ -1441,11 +1443,11 @@ namespace crimson {
                             deltar.next_request().tag.proportion < max_tag) {
                             return NextReq(HeapId::deltar);
                         }
-                        auto &reserv = resv_heap.top();
-                        if (reserv.has_request() &&
-                            reserv.next_request().tag.reservation < max_tag) {
-                            return NextReq(HeapId::reservation);
-                        }
+                        // auto &reserv = resv_heap.top();
+                        // if (reserv.has_request() &&
+                        //     reserv.next_request().tag.reservation < max_tag) {
+                        //     return NextReq(HeapId::reservation);
+                        // }
                     }
                     if (!burst_heap.empty()) {
                         auto &bursts = burst_heap.top();
