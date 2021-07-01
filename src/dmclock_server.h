@@ -917,6 +917,9 @@ namespace crimson {
             std::string s_path;
             int client_socket;
 
+            // mutex for the end of a window
+            std::mutex m_win;
+
 
             // NB: All threads declared at end, so they're destructed first!
 
@@ -970,7 +973,7 @@ namespace crimson {
               getcwd(path, 255);
               s_path = path;
               s_path += "/scheduling.txt";
-              init_client_socket();
+//              init_client_socket();
             }
 
             template<typename Rep, typename Per>
@@ -1002,12 +1005,12 @@ namespace crimson {
               getcwd(path, 255);
               s_path = path;
               s_path += "/scheduling.txt";
-              init_client_socket();
+//              init_client_socket();
             }
 
             ~PriorityQueueBase() {
               finishing = true;
-              close(client_socket);
+//              close(client_socket);
               //ofs.close();
             }
 
@@ -1055,7 +1058,7 @@ namespace crimson {
               std::stringstream s_builder;
 //              std::atomic_uint a;
 //              std::cout << a;
-              s_builder /*<< get_time() << ","*/ << ctype << "(" << client->info->reservation << ", "
+              s_builder << std::fixed << get_time() << "," << ctype << "(" << client->info->reservation << ", "
                                                  << client->info->weight << ", " << client->info->limit << "):\t"
                                                  << client->r_counter << ", " << client->r0_counter << ", "
                                                  << client->r0_break_limit_counter << ", " << client->b_counter << ", "
@@ -1065,14 +1068,14 @@ namespace crimson {
               //     << client->r_counter << ", " << client->r0_counter << ", " << client->b_counter << ", "
               //     << client->be_counter << std::endl;
               const std::string info = s_builder.str();
-              ofs << info;
+//              ofs << info;
               ofs_pwd << info;
-              if (client_socket != -1) {
-                send(client_socket, info.c_str(), info.length(), 0);
-              } else {
-                ofs << "socket connect failed" << std::endl;
+//              if (client_socket != -1) {
+//                send(client_socket, info.c_str(), info.length(), 0);
+//              } else {
+//                ofs << "socket connect failed" << std::endl;
                 ofs_pwd << "socket connect failed" << std::endl;
-              }
+//              }
             }
 
             // data_mtx must be held by caller
@@ -1355,22 +1358,31 @@ namespace crimson {
               }
 
               if (now - win_start >= win_size) {
-                ofs.open("/root/swh/result/scheduling.txt", std::ios_base::app);
+                // 避免多线程并发执行这块代码
+                std::unique_lock<std::mutex> lock(m_win, std::try_to_lock);
+                if (lock.owns_lock()){
+                  // 先执行这个, 减少并发进入这个区域的概率
+                  win_start = std::max(win_start + win_size, now);
 
-                ofs_pwd.open(s_path.c_str(), std::ios_base::app);
-                for (auto c : client_map) {
-                  printScheduling(c.second);
-                  c.second->b_counter = 0;
-                  c.second->b_break_limit_counter = 0;
-                  c.second->r0_counter = 0;
-                  c.second->r0_break_limit_counter = 0;
-                  c.second->r_counter = 0;
-                  c.second->be_counter = 0;
-                  c.second->be_break_limit_counter = 0;
+//                ofs.open("/root/swh/result/scheduling.txt", std::ios_base::app);
+
+                  ofs_pwd.open(s_path.c_str(), std::ios_base::app);
+                  // 把print分离出来, 因为print开销大, 可能有其他线程在等待counter来满足条件
+                  for (auto c : client_map) {
+                    c.second->b_counter = 0;
+                    c.second->b_break_limit_counter = 0;
+                    c.second->r0_counter = 0;
+                    c.second->r0_break_limit_counter = 0;
+                    c.second->r_counter = 0;
+                    c.second->be_counter = 0;
+                    c.second->be_break_limit_counter = 0;
+                  }
+                  for (auto c : client_map) {
+                    printScheduling(c.second);
+                  }
+//                ofs.close();
+                  ofs_pwd.close();
                 }
-                win_start = std::max(win_start + win_size, now);
-                ofs.close();
-                ofs_pwd.close();
               }
 
 
