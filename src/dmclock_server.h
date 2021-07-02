@@ -1367,8 +1367,8 @@ namespace crimson {
 //                ofs.open("/root/swh/result/scheduling.txt", std::ios_base::app);
 
                   ofs_pwd.open(s_path.c_str(), std::ios_base::app);
-                  // 把print分离出来, 因为print开销大, 可能有其他线程在等待counter来满足条件
                   for (auto c : client_map) {
+                    printScheduling(c.second);
                     c.second->b_counter = 0;
                     c.second->b_break_limit_counter = 0;
                     c.second->r0_counter = 0;
@@ -1377,9 +1377,9 @@ namespace crimson {
                     c.second->be_counter = 0;
                     c.second->be_break_limit_counter = 0;
                   }
-                  for (auto c : client_map) {
-                    printScheduling(c.second);
-                  }
+                  // for (auto c : client_map) {
+                  //   printScheduling(c.second);
+                  // }
 //                ofs.close();
                   ofs_pwd.close();
                 }
