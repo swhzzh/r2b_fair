@@ -687,8 +687,9 @@ namespace crimson {
 
 //                prop_heap.adjust(*i->second);
 
-              reduce_total_wgt(i->second->info->weight);
-              update_client_res();
+              // reduce_total_wgt(i->second->info->weight);
+              // update_client_res();
+              add_total_wgt_and_update_client_res(0 - i->second->info->weight);
             }
 
 
@@ -696,18 +697,19 @@ namespace crimson {
               return B;
             }
 
-
+            
             void update_client_info(const C &client_id) {
               DataGuard g(data_mtx);
               auto client_it = client_map.find(client_id);
               if (client_map.end() != client_it) {
                 ClientRec &client = (*client_it->second);
+                double old_wgt = client.info->weight;
                 //reduce_total_wgt(client.info->weight);
-                reduce_total_reserv(client.info->reservation);
+                // reduce_total_reserv(client.info->reservation);
                 client.info = client_info_f(client_id);
-                add_total_wgt(client.info->weight);
+                // add_total_wgt(client.info->weight);
                 //add_total_reserv(client.info->reservation);
-                update_client_res();
+                add_total_wgt_and_update_client_res(client.info->weight - old_wgt);
               }
             }
 
@@ -919,7 +921,7 @@ namespace crimson {
 
             // mutex for the end of a window
             std::mutex m_win;
-
+            std::mutex m_update_wgt_res;
 
             // NB: All threads declared at end, so they're destructed first!
 
@@ -1115,10 +1117,11 @@ namespace crimson {
 //                    prop_heap.push(client_rec);
 
                 client_map[client_id] = client_rec;
-                add_total_wgt(info->weight);
+                // add_total_wgt(info->weight);
                 //add_total_reserv(info->reservation);
                 // update clients' resource
-                update_client_res();
+                // update_client_res();
+                add_total_wgt_and_update_client_res(info->weight);
                 temp_client = &(*client_rec); // address of obj of shared_ptr
               }
               // for convenience, we'll create a reference to the shared pointer
@@ -1580,8 +1583,9 @@ namespace crimson {
                     delete_from_heaps(i2->second);
                     client_map.erase(i2);
                     //reduce_total_wgt(i2->second->info->weight);
-                    reduce_total_reserv(i2->second->info->reservation);
-                    update_client_res();
+                    // reduce_total_reserv(i2->second->info->reservation);
+                    // update_client_res();
+                    add_total_wgt_and_update_client_res(i2->second->info->weight);
                   } else if (idle_point && i2->second->last_tick <= idle_point) {
                     i2->second->idle = true;
                   }
@@ -1629,6 +1633,22 @@ namespace crimson {
             }
 
             void update_client_res() {
+              for (auto c: client_map) {
+                c.second->resource = system_capacity * c.second->info->weight * win_size / total_wgt;
+                if (c.second->info->client_type == ClientType::R) {
+                  c.second->dlimit = system_capacity * c.second->info->weight / total_wgt;
+                  c.second->deltar = c.second->dlimit > c.second->info->reservation ? c.second->dlimit -
+                                                                                      c.second->info->reservation
+                                                                                    : 0;
+//                        c.second->deltar = c.second->info->weight;
+                  c.second->dlimit = 0;
+                }
+              }
+            }
+
+            void add_total_wgt_and_update_client_res(double wgt) {
+              std::lock_guard<std::mutex> lock(m_update_wgt_res);
+              total_wgt += wgt;
               for (auto c: client_map) {
                 c.second->resource = system_capacity * c.second->info->weight * win_size / total_wgt;
                 if (c.second->info->client_type == ClientType::R) {
