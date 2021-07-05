@@ -359,6 +359,7 @@ namespace crimson {
 
                 c::IndIntruHeapData reserv_heap_data{};
                 c::IndIntruHeapData deltar_heap_data{};
+                c::IndIntruHeapData r_limit_heap_data{};
                 c::IndIntruHeapData lim_heap_data{};
                 c::IndIntruHeapData ready_heap_data{};
                 c::IndIntruHeapData burst_heap_data{};
@@ -618,7 +619,7 @@ namespace crimson {
                   if (i.second->info->client_type == ClientType::R) {
                     resv_heap.adjust(*i.second);
                     deltar_heap.adjust(*i.second);
-//                            limit_heap.adjust(*i.second);
+                    r_limit_heap.adjust(*i.second);
                   }
 
                   if (i.second->info->client_type == ClientType::B) {
@@ -673,7 +674,7 @@ namespace crimson {
               if (i->second->info->client_type == ClientType::R) {
                 resv_heap.adjust(*i->second);
                 deltar_heap.adjust(*i->second);
-//                    limit_heap.adjust(*i->second);
+                r_limit_heap.adjust(*i->second);
                 //reduce_total_reserv(i->second->info->reservation);
               }
 
@@ -854,6 +855,13 @@ namespace crimson {
                             ReadyOption::raises,
                             true>,
                     B> deltar_heap;
+            c::IndIntruHeap<ClientRecRef,
+                    ClientRec,
+                    &ClientRec::r_limit_heap_data,
+                    ClientCompare<&RequestTag::limit,
+                            ReadyOption::lowers,
+                            false>,
+                    B> r_limit_heap;
 //#if USE_PROP_HEAP
 //            c::IndIntruHeap<ClientRecRef,
 //                    ClientRec,
@@ -910,7 +918,7 @@ namespace crimson {
             // start time of window
             Time win_start = 0.0;
             // size of time window
-            Time win_size = 10.0;
+            Time win_size = 20.0;
             double total_wgt = 0.0;
             double total_res = 0.0;
 
@@ -962,8 +970,8 @@ namespace crimson {
                     idle_age(std::chrono::duration_cast<Duration>(_idle_age)),
                     erase_age(std::chrono::duration_cast<Duration>(_erase_age)),
                     check_time(std::chrono::duration_cast<Duration>(_check_time)),
-                    system_capacity(40),
-                    win_size(30) {
+                    system_capacity(8000),
+                    win_size(20) {
               assert(_erase_age >= _idle_age);
               assert(_check_time < _idle_age);
               cleaning_job =
@@ -1031,13 +1039,13 @@ namespace crimson {
                 client.info = client_info_f(client.client);
                 if (client.info->client_type == ClientType::R) {
                   const std::shared_ptr<ClientInfo> info(
-                          new ClientInfo(client.info->reservation, client.deltar, client.dlimit, ClientType::R));
+                          new ClientInfo(client.info->reservation, client.deltar, client.info->limit, ClientType::R));
                   return info.get();
                 }
               }
               if (client.info->client_type == ClientType::R) {
                 const std::shared_ptr<ClientInfo> info(
-                        new ClientInfo(client.info->reservation, client.deltar, client.dlimit, ClientType::R));
+                        new ClientInfo(client.info->reservation, client.deltar, client.info->limit, ClientType::R));
                 return info.get();
               }
 //                if (client.info->client_type == ClientType::B) {
@@ -1076,7 +1084,7 @@ namespace crimson {
 //                send(client_socket, info.c_str(), info.length(), 0);
 //              } else {
 //                ofs << "socket connect failed" << std::endl;
-                ofs_pwd << "socket connect failed" << std::endl;
+//                ofs_pwd << "socket connect failed" << std::endl;
 //              }
             }
 
@@ -1101,7 +1109,7 @@ namespace crimson {
                         std::make_shared<ClientRec>(client_id, info, tick);
                 if (info->client_type == ClientType::R) {
                   resv_heap.push(client_rec);
-//                        limit_heap.push(client_rec);
+                  r_limit_heap.push(client_rec);
                   deltar_heap.push(client_rec);
                 }
 
@@ -1215,7 +1223,7 @@ namespace crimson {
                 // heaps?
                 if (client.info->client_type == ClientType::R) {
                   resv_heap.adjust(client);
-//                        limit_heap.adjust(client);
+                  r_limit_heap.adjust(client);
                   deltar_heap.adjust(client);
                 }
 
@@ -1236,7 +1244,7 @@ namespace crimson {
 
               if (client.info->client_type == ClientType::R) {
                 resv_heap.adjust(client);
-//                    limit_heap.adjust(client);
+                r_limit_heap.adjust(client);
                 deltar_heap.adjust(client);
               }
 
@@ -1299,7 +1307,7 @@ namespace crimson {
                 // }
                 resv_heap.demote(top);
                 deltar_heap.demote(top);
-//                    limit_heap.adjust(top);
+                r_limit_heap.adjust(top);
               }
 
               if (client_info->client_type == ClientType::B) {
@@ -1436,11 +1444,31 @@ namespace crimson {
                 }
               }
 
+              if (!r_limit_heap.empty()) {
+                auto limits = &r_limit_heap.top();
+                while (limits->has_request() &&
+                       !limits->next_request().tag.ready &&
+                       limits->next_request().tag.limit <= now) {
+                  limits->next_request().tag.ready = true;
+//                        if (limits->info->client_type == ClientType::R) {
+//                            deltar_heap.promote(*limits);
+//                        }
+//                        if (limits->info->client_type == ClientType::B) {
+                  deltar_heap.promote(*limits);
+//                        }
+//                        prop_heap.promote(*limits);
+                  r_limit_heap.demote(*limits);
+
+                  limits = &r_limit_heap.top();
+                }
+              }
+
+
               if (!deltar_heap.empty()) {
                 auto &deltar = deltar_heap.top();
                 if (deltar.r0_counter < std::max(deltar.resource - deltar.info->reservation * win_size, 0.0) &&
                     deltar.has_request() &&
-                    //                        deltar.next_request().tag.ready &&
+                    deltar.next_request().tag.ready &&
                     deltar.next_request().tag.proportion < max_tag) {
                   deltar.r0_counter++;
                   return NextReq(HeapId::deltar);
@@ -1519,11 +1547,18 @@ namespace crimson {
                           min_not_0_time(next_call,
                                          resv_heap.top().next_request().tag.reservation);
                 }
-              } else if (!limit_heap.empty()) {
+              }
+              else if (!r_limit_heap.empty()) {
+                if (r_limit_heap.top().has_request()) {
+                  const auto &next = r_limit_heap.top().next_request();
+                  assert(!next.tag.ready || max_tag == next.tag.proportion);
+                  next_call = min_not_0_time(next_call, next.tag.limit);
+                }
+              }
+              else if (!limit_heap.empty()) {
                 if (limit_heap.top().has_request()) {
                   const auto &next = limit_heap.top().next_request();
-                  assert(!next.tag.ready || max_tag == next.tag.proportion ||
-                         limit_heap.top().info->client_type == ClientType::B);
+                  assert(!next.tag.ready || max_tag == next.tag.proportion);
                   next_call = min_not_0_time(next_call, next.tag.limit);
                 }
               }
@@ -1608,7 +1643,7 @@ namespace crimson {
               if (client->info->client_type == ClientType::R) {
                 delete_from_heap(client, resv_heap);
                 delete_from_heap(client, deltar_heap);
-//                    delete_from_heap(client, limit_heap);
+                delete_from_heap(client, r_limit_heap);
               }
               if (client->info->client_type == ClientType::A) {
                 delete_from_heap(client, best_heap);
@@ -1680,7 +1715,7 @@ namespace crimson {
             }
 
             ClientInfo *get_real_client_info(const ClientRec &client) {
-              ClientInfo new_client = ClientInfo(client.info->reservation, client.deltar, client.dlimit);
+              ClientInfo new_client = ClientInfo(client.info->reservation, client.deltar, client.info->limit);
               return &new_client;
             }
         }; // class PriorityQueueBase
