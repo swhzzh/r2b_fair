@@ -364,6 +364,7 @@ namespace crimson {
                 c::IndIntruHeapData ready_heap_data{};
                 c::IndIntruHeapData burst_heap_data{};
                 c::IndIntruHeapData best_heap_data{};
+                c::IndIntruHeapData best_limit_heap_data{};
 //#if USE_PROP_HEAP
 //                c::IndIntruHeapData prop_heap_data{};
 //#endif
@@ -629,6 +630,7 @@ namespace crimson {
 
                   if (i.second->info->client_type == ClientType::A) {
                     best_heap.adjust(*i.second);
+                    best_limit_heap.adjust(*i.second);
                   }
 
 //                        prop_heap.adjust(*i.second);
@@ -684,6 +686,7 @@ namespace crimson {
               }
               if (i->second->info->client_type == ClientType::A) {
                 best_heap.adjust(*i->second);
+                best_limit_heap.adjust(*i->second);
               }
 
 //                prop_heap.adjust(*i->second);
@@ -892,6 +895,13 @@ namespace crimson {
                             ReadyOption::raises,
                             true>,
                     B> best_heap;
+            c::IndIntruHeap<ClientRecRef,
+                    ClientRec,
+                    &ClientRec::best_limit_heap_data,
+                    ClientCompare<&RequestTag::limit,
+                            ReadyOption::lowers,
+                            false>,
+                    B> best_limit_heap;
             // if all reservations are met and all other requestes are under
             // limit, this will allow the request next in terms of
             // proportion to still get issued
@@ -971,7 +981,7 @@ namespace crimson {
                     erase_age(std::chrono::duration_cast<Duration>(_erase_age)),
                     check_time(std::chrono::duration_cast<Duration>(_check_time)),
                     system_capacity(8000),
-                    win_size(20) {
+                    win_size(30) {
               assert(_erase_age >= _idle_age);
               assert(_check_time < _idle_age);
               cleaning_job =
@@ -1120,6 +1130,7 @@ namespace crimson {
 
                 if (info->client_type == ClientType::A) {
                   best_heap.push(client_rec);
+                  best_limit_heap.push(client_rec);
                 }
 
 //                    prop_heap.push(client_rec);
@@ -1234,6 +1245,7 @@ namespace crimson {
 
                 if (client.info->client_type == ClientType::A) {
                   best_heap.adjust(client);
+                  best_limit_heap.adjust(client);
                 }
 
 //                    prop_heap.adjust(client);
@@ -1255,6 +1267,7 @@ namespace crimson {
 
               if (client.info->client_type == ClientType::A) {
                 best_heap.adjust(client);
+                best_limit_heap.adjust(client);
               }
 
 //                prop_heap.adjust(client);
@@ -1320,6 +1333,7 @@ namespace crimson {
               if (client_info->client_type == ClientType::A) {
                 //   top.be_counter++;
                 best_heap.demote(top);
+                best_limit_heap.adjust(top);
               }
 
 //                prop_heap.demote(top);
@@ -1494,9 +1508,30 @@ namespace crimson {
 //                    }
 //                }
 
+              if (!best_limit_heap.empty()) {
+                auto limits = &best_limit_heap.top();
+                while (limits->has_request() &&
+                       !limits->next_request().tag.ready &&
+                       limits->next_request().tag.limit <= now) {
+                  limits->next_request().tag.ready = true;
+//                        if (limits->info->client_type == ClientType::R) {
+//                            deltar_heap.promote(*limits);
+//                        }
+//                        if (limits->info->client_type == ClientType::B) {
+                  best_heap.promote(*limits);
+//                        }
+//                        prop_heap.promote(*limits);
+                  best_limit_heap.demote(*limits);
+
+                  limits = &best_limit_heap.top();
+                }
+              }
+
               if (!best_heap.empty()) {
                 auto &bests = best_heap.top();
-                if (bests.has_request() && bests.next_request().tag.proportion < max_tag) {
+                if (bests.has_request() &&
+                  bests.next_request().tag.ready &&
+                  bests.next_request().tag.proportion < max_tag) {
                   bests.be_counter++;
                   return NextReq(HeapId::best_effort);
                 }
@@ -1647,6 +1682,7 @@ namespace crimson {
               }
               if (client->info->client_type == ClientType::A) {
                 delete_from_heap(client, best_heap);
+                delete_from_heap(client, best_limit_heap);
               }
               if (client->info->client_type == ClientType::B) {
                 delete_from_heap(client, limit_heap);
