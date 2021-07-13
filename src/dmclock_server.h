@@ -1044,20 +1044,21 @@ namespace crimson {
 
             // 假设即使是开启了is_dynamic_cli_info_f, 也不会动态更改用来分配资源的weight
             // 这边逻辑问题比较大, 现在先这样实现吧
+            // weight tag is used to limit the total resource of certain client, but deltar is just the incremental part of reservation client
             const ClientInfo *client_info_wrapper(ClientRec &client) {
               if (is_dynamic_cli_info_f) {
                 client.info = client_info_f(client.client);
-                if (client.info->client_type == ClientType::R) {
-                  const std::shared_ptr<ClientInfo> info(
-                          new ClientInfo(client.info->reservation, client.deltar, client.info->limit, ClientType::R));
-                  return info.get();
-                }
+//                if (client.info->client_type == ClientType::R) {
+//                  const std::shared_ptr<ClientInfo> info(
+//                          new ClientInfo(client.info->reservation, client.deltar, client.info->limit, ClientType::R));
+//                  return info.get();
+//                }
               }
-              if (client.info->client_type == ClientType::R) {
-                const std::shared_ptr<ClientInfo> info(
-                        new ClientInfo(client.info->reservation, client.deltar, client.info->limit, ClientType::R));
-                return info.get();
-              }
+//              if (client.info->client_type == ClientType::R) {
+//                const std::shared_ptr<ClientInfo> info(
+//                        new ClientInfo(client.info->reservation, client.deltar, client.info->limit, ClientType::R));
+//                return info.get();
+//              }
 //                if (client.info->client_type == ClientType::B) {
 //                    const std::shared_ptr<ClientInfo> info(
 //                            new ClientInfo(0.0, client.info->weight, client.dlimit, ClientType::B));
@@ -1078,11 +1079,11 @@ namespace crimson {
               std::stringstream s_builder;
 //              std::atomic_uint a;
 //              std::cout << a;
-              s_builder << std::fixed << get_time() << "," << ctype << "(" << client->info->reservation << ", "
+              s_builder << std::fixed << get_time() << "," << ctype << "(" << client->resource << ", " << client->info->reservation << ", "
                                                  << client->info->weight << ", " << client->info->limit << "):\t"
                                                  << client->r_counter << ", " << client->r0_counter << ", "
                                                  << client->r0_break_limit_counter << ", " << client->b_counter << ", "
-                                                 << client->b_break_limit_counter << ", " << client->be_counter << ","
+                                                 << client->b_break_limit_counter << ", " << client->be_counter << ", "
                                                  << client->be_break_limit_counter << std::endl;
               //   ofs << get_time() << "," << ctype << "(" << client->info->reservation << ", " << client->info->weight << ", " << client->info->limit << ") "
               //     << client->r_counter << ", " << client->r0_counter << ", " << client->b_counter << ", "
@@ -1542,6 +1543,17 @@ namespace crimson {
               // schedule something with the lowest proportion tag or
               // alternatively lowest reservation tag.
               if (allow_limit_break) {
+
+                  if (!best_heap.empty()) {
+                      auto &bests = best_heap.top();
+                      if (bests.has_request() &&
+                          bests.next_request().tag.proportion < max_tag) {
+                          bests.be_break_limit_counter++;
+                          return NextReq(HeapId::best_effort);
+                      }
+                  }
+
+
                 if (!deltar_heap.empty()) {
                   auto &deltar = deltar_heap.top();
                   if (deltar.has_request() &&
@@ -1563,14 +1575,7 @@ namespace crimson {
                     return NextReq(HeapId::burst);
                   }
                 }
-                if (!best_heap.empty()) {
-                  auto &bests = best_heap.top();
-                  if (bests.has_request() &&
-                      bests.next_request().tag.proportion < max_tag) {
-                    bests.be_break_limit_counter++;
-                    return NextReq(HeapId::best_effort);
-                  }
-                }
+
               }
 
               // nothing scheduled; make sure we re-run when next
@@ -1706,14 +1711,14 @@ namespace crimson {
             void update_client_res() {
               for (auto c: client_map) {
                 c.second->resource = system_capacity * c.second->info->weight * win_size / total_wgt;
-                if (c.second->info->client_type == ClientType::R) {
-                  c.second->dlimit = system_capacity * c.second->info->weight / total_wgt;
-                  c.second->deltar = c.second->dlimit > c.second->info->reservation ? c.second->dlimit -
-                                                                                      c.second->info->reservation
-                                                                                    : 0;
-//                        c.second->deltar = c.second->info->weight;
-                  c.second->dlimit = 0;
-                }
+//                if (c.second->info->client_type == ClientType::R) {
+//                  c.second->dlimit = system_capacity * c.second->info->weight / total_wgt;
+//                  c.second->deltar = c.second->dlimit > c.second->info->reservation ? c.second->dlimit -
+//                                                                                      c.second->info->reservation
+//                                                                                    : 0;
+////                        c.second->deltar = c.second->info->weight;
+//                  c.second->dlimit = 0;
+//                }
               }
             }
 
@@ -1722,14 +1727,14 @@ namespace crimson {
               total_wgt += wgt;
               for (auto c: client_map) {
                 c.second->resource = system_capacity * c.second->info->weight * win_size / total_wgt;
-                if (c.second->info->client_type == ClientType::R) {
-                  c.second->dlimit = system_capacity * c.second->info->weight / total_wgt;
-                  c.second->deltar = c.second->dlimit > c.second->info->reservation ? c.second->dlimit -
-                                                                                      c.second->info->reservation
-                                                                                    : 0;
-//                        c.second->deltar = c.second->info->weight;
-                  c.second->dlimit = 0;
-                }
+//                if (c.second->info->client_type == ClientType::R) {
+//                  c.second->dlimit = system_capacity * c.second->info->weight / total_wgt;
+//                  c.second->deltar = c.second->dlimit > c.second->info->reservation ? c.second->dlimit -
+//                                                                                      c.second->info->reservation
+//                                                                                    : 0;
+////                        c.second->deltar = c.second->info->weight;
+//                  c.second->dlimit = 0;
+//                }
               }
             }
 
