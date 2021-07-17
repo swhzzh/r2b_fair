@@ -1660,12 +1660,20 @@ namespace crimson {
                     //reduce_total_wgt(i2->second->info->weight);
                     // reduce_total_reserv(i2->second->info->reservation);
                     // update_client_res();
-                    add_total_wgt_and_update_client_res(i2->second->info->weight);
+                    if(0 == i2->second->info->weight){
+                        continue;
+                    }
+                    // 这里和check_removed_client仍然存在潜在的并发问题, 虽然由于m_update_wgt的限制, 无法并发, 但是这里已经把错误的参数传过去了,
+                    // 导致多减一个wgt
+                    // 这里暂时没有很好地办法, 由于并发的概率比较小, cleanjob每几分钟运行一次, 暂时这样吧
+                    add_total_wgt_and_update_client_res(0 - i2->second->info->weight);
                   } else if (idle_point && i2->second->last_tick <= idle_point) {
                     i2->second->idle = true;
                   }
                 } // for
               } // if
+
+              // 针对pool创建后删除的情况，手动检查
             } // do_clean
 
 
@@ -1724,6 +1732,7 @@ namespace crimson {
 
             void add_total_wgt_and_update_client_res(double wgt) {
               std::lock_guard<std::mutex> lock(m_update_wgt_res);
+              check_removed_client();
               total_wgt += wgt;
               for (auto c: client_map) {
                 c.second->resource = system_capacity * c.second->info->weight * win_size / total_wgt;
@@ -1736,6 +1745,18 @@ namespace crimson {
 //                  c.second->dlimit = 0;
 //                }
               }
+            }
+
+            void check_removed_client(){
+                for(auto c: client_map){
+                    const ClientInfo* temp = client_info_f(c.second->client);
+                    // 对应pool_noexist
+                    if (0 == temp->weight){
+                        total_wgt -= c.second->info->weight;
+                        // 简单的把weight设为0, 然后丢给cleanjob去删除client_map中的对应client
+                        c.second->info = temp;
+                    }
+                }
             }
 
             void add_total_wgt(double wgt) {
