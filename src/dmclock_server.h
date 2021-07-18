@@ -1543,6 +1543,18 @@ namespace crimson {
               // schedule something with the lowest proportion tag or
               // alternatively lowest reservation tag.
               if (allow_limit_break) {
+                  // check reserve heap again to ensure the qos of reserve client
+                  if (!resv_heap.empty()){
+                      for (int j = 0; j < 2; ++j) {
+                          auto &reserv = resv_heap.top();
+                          if (reserv.has_request() &&
+                              reserv.next_request().tag.reservation < max_tag) {
+                              return NextReq(HeapId::reservation);
+                          }
+                      }
+                  }
+
+
 
                   if (!best_heap.empty()) {
                       auto &bests = best_heap.top();
@@ -1561,11 +1573,7 @@ namespace crimson {
                     deltar.r0_break_limit_counter++;
                     return NextReq(HeapId::deltar);
                   }
-                  // auto &reserv = resv_heap.top();
-                  // if (reserv.has_request() &&
-                  //     reserv.next_request().tag.reservation < max_tag) {
-                  //     return NextReq(HeapId::reservation);
-                  // }
+
                 }
                 if (!burst_heap.empty()) {
                   auto &bursts = burst_heap.top();
