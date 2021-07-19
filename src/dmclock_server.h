@@ -395,6 +395,8 @@ namespace crimson {
                 std::atomic_uint be_counter;
                 std::atomic_uint be_break_limit_counter;
 
+                std::atomic_uint r_compensation;
+
                 ClientRec(C _client,
                           const ClientInfo *_info,
                           Counter current_tick) :
@@ -414,6 +416,7 @@ namespace crimson {
                   be_counter.store(0);
                   be_break_limit_counter.store(0);
                   // empty
+                  r_compensation.store(0);
                 }
 
                 inline const RequestTag &get_req_tag() const {
@@ -1054,11 +1057,11 @@ namespace crimson {
 //                  return info.get();
 //                }
               }
-//              if (client.info->client_type == ClientType::R) {
-//                const std::shared_ptr<ClientInfo> info(
-//                        new ClientInfo(client.info->reservation, client.deltar, client.info->limit, ClientType::R));
-//                return info.get();
-//              }
+              if (client.info->client_type == ClientType::R) {
+                const std::shared_ptr<ClientInfo> info(
+                        new ClientInfo(client.info->reservation + client.r_compensation, client.info->weight, client.info->limit, ClientType::R));
+                return info.get();
+              }
 //                if (client.info->client_type == ClientType::B) {
 //                    const std::shared_ptr<ClientInfo> info(
 //                            new ClientInfo(0.0, client.info->weight, client.dlimit, ClientType::B));
@@ -1299,6 +1302,7 @@ namespace crimson {
 //	  const ClientInfo* client_info = get_cli_info(top);
                 const ClientInfo *client_info = client_info_wrapper(top);
                 assert(client_info);
+                // next_first.tag.arrival就是这个request到达时的now, 这里没问题
                 next_first.tag = RequestTag(tag, *client_info,
                                             top.cur_delta, top.cur_rho,
                                             next_first.tag.arrival,
@@ -1395,6 +1399,14 @@ namespace crimson {
                   ofs_pwd.open(s_path.c_str(), std::ios_base::app);
                   for (auto c : client_map) {
                     printScheduling(c.second);
+                      if (ClientType::R == c.second->info->client_type){
+                          int compensate = (c.second->info->reservation * win_size - c.second->r_counter) / win_size;
+                          c.second->r_compensation += compensate;
+                          if (c.second->r_compensation < 0){
+                              c.second->r_compensation = 0;
+                          }
+                      }
+
                     c.second->b_counter = 0;
                     c.second->b_break_limit_counter = 0;
                     c.second->r0_counter = 0;
@@ -1544,15 +1556,15 @@ namespace crimson {
               // alternatively lowest reservation tag.
               if (allow_limit_break) {
                   // check reserve heap again to ensure the qos of reserve client
-                  if (!resv_heap.empty()){
-                      for (int j = 0; j < 2; ++j) {
-                          auto &reserv = resv_heap.top();
-                          if (reserv.has_request() &&
-                              reserv.next_request().tag.reservation < max_tag) {
-                              return NextReq(HeapId::reservation);
-                          }
-                      }
-                  }
+//                  if (!resv_heap.empty()){
+//                      for (int j = 0; j < 2; ++j) {
+//                          auto &reserv = resv_heap.top();
+//                          if (reserv.has_request() &&
+//                              reserv.next_request().tag.reservation < max_tag) {
+//                              return NextReq(HeapId::reservation);
+//                          }
+//                      }
+//                  }
 
 
 
