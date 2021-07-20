@@ -1155,7 +1155,8 @@ namespace crimson {
 //                    prop_heap.push(client_rec);
 
                     client_map[client_id] = client_rec;
-                    client_no[client_id] = atomic_fetch_add(&next_client_no, 1);
+//                    client_no[client_id] = atomic_fetch_add(&next_client_no, 1);
+                    client_no[client_id] = next_client_no.fetch_add(1);
 
                     // add_total_wgt(info->weight);
                     //add_total_reserv(info->reservation);
