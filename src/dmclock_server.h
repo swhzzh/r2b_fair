@@ -1062,6 +1062,11 @@ namespace crimson {
             // weight tag is used to limit the total resource of certain client, but deltar is just the incremental part of reservation client
             const ClientInfo *client_info_wrapper(ClientRec &client) {
                 if (is_dynamic_cli_info_f) {
+                    // for weight update
+                    const ClientInfo* temp_client_info = client_info_f(client.client);
+                    if (temp_client_info->weight != client.info->weight){
+                        add_total_wgt_and_update_client_res(temp_client_info->weight - client.info->weight);
+                    }
                     client.info = client_info_f(client.client);
 //                if (client.info->client_type == ClientType::R) {
 //                  const std::shared_ptr<ClientInfo> info(
