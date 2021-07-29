@@ -857,6 +857,8 @@ namespace crimson {
             std::map<C, int> client_no;
             std::atomic_uint next_client_no;
 
+            std::map<C, const ClientInfo*> new_client_map; 
+
             c::IndIntruHeap<ClientRecRef,
                     ClientRec,
                     &ClientRec::reserv_heap_data,
@@ -1064,10 +1066,17 @@ namespace crimson {
                 if (is_dynamic_cli_info_f) {
                     // for weight update
                     const ClientInfo* temp_client_info = client_info_f(client.client);
-                    if (temp_client_info->weight != client.info->weight){
-                        add_total_wgt_and_update_client_res(temp_client_info->weight - client.info->weight);
+                    // 存在更新, 这里应该比较指针是否相等就行了
+                    if (temp_client_info != client.info)
+                    {
+                        // 暂存起来, 之后window结束时更新即可
+                        new_client_map[client.client] = temp_client_info;
                     }
-                    client.info = client_info_f(client.client);
+                    
+                    // if (temp_client_info->weight != client.info->weight){
+                    //     add_total_wgt_and_update_client_res(temp_client_info->weight - client.info->weight);
+                    // }
+                    // client.info = client_info_f(client.client);
 //                if (client.info->client_type == ClientType::R) {
 //                  const std::shared_ptr<ClientInfo> info(
 //                          new ClientInfo(client.info->reservation, client.deltar, client.info->limit, ClientType::R));
@@ -1087,6 +1096,47 @@ namespace crimson {
 //                }
                 return client.info;
             }
+
+            // 还是在window的结束时转换吧, 要不然转换为R类型应用不太好处理, 
+            // 比如转为R后reservation是必须满足的, 但如果之前类型已经把自己的份额用完了, 就可以多用r的资源了, 这种可能会被恶意用户利用来多占资源
+            // 这样的话 就不需要这里计算消耗的资源了, 但是要check下在window中间的时候改变client_type有没有问题?? 应该是没事的
+            void handle_client_type_change(std::shared_ptr<ClientRec> client_rec, const ClientInfo* new_client_info){
+
+                if (client_rec->info->client_type == new_client_info->client_type)
+                {
+                    return;
+                }
+                move_to_another_heap(client_rec, new_client_info);
+                
+                
+                
+
+            }
+
+            void move_to_another_heap(std::shared_ptr<ClientRec> client, const ClientInfo* new_client_info){
+                // delete from original heap
+                delete_from_heaps(client);
+
+                // add to new heap
+                if (new_client_info->client_type == ClientType::R) {
+                    resv_heap.push(client);
+                    r_limit_heap.push(client);
+                    deltar_heap.push(client);
+                }
+
+                else if (new_client_info->client_type == ClientType::B) {
+                    limit_heap.push(client);
+                    burst_heap.push(client);
+                }
+
+                else if (new_client_info->client_type == ClientType::A || new_client_info->client_type == ClientType::O) {
+                    best_heap.push(client);
+                    best_limit_heap.push(client);
+                }
+                
+                
+            }
+
 
             void printScheduling(std::shared_ptr<ClientRec> client) {
                 std::string client_name;
@@ -1450,6 +1500,21 @@ namespace crimson {
                         // }
 //                ofs.close();
                         ofs_pwd.close();
+
+                        // handle clientinfo update
+                        for (auto c: new_client_map)
+                        {
+                            // client type update
+                            handle_client_type_change(client_map[c.first], c.second);
+                            // client weight update
+                            if (c.second->weight != client_map[c.first]->info->weight)
+                            {
+                                add_total_wgt_and_update_client_res(c.second->weight - client_map[c.first]->info->weight);
+                            }
+                            client_map[c.first]->info = c.second;
+                            //TODO: delete old clientinfo??? 
+                        }
+                        new_client_map.clear();
                     }
                 }
 
