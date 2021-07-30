@@ -1066,7 +1066,9 @@ namespace crimson {
                 if (is_dynamic_cli_info_f) {
                     // for weight update
                     const ClientInfo* temp_client_info = client_info_f(client.client);
-                    // 存在更新, 这里应该比较指针是否相等就行了
+                    // 存在更新, 这里应该比较指针是否相等就行了, 不行, mClockPoolQueue中指针自己是不会变的, 只是指向的内容改变
+                    // 明天需要调研一下struct的new和delete, 改变一下mClockPoolQueue里面的写法, 比如每次更改都用新的指针等等, 这也比较符合dmclock的这个dynamic的设计 本来的设计
+                    // 可以看下初始版本的写法
                     if (temp_client_info != client.info)
                     {
                         // 暂存起来, 之后window结束时更新即可
@@ -1511,6 +1513,7 @@ namespace crimson {
                             {
                                 add_total_wgt_and_update_client_res(c.second->weight - client_map[c.first]->info->weight);
                             }
+                            delete client_map[c.first]->info;
                             client_map[c.first]->info = c.second;
                             //TODO: delete old clientinfo??? 
                         }
