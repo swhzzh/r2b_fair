@@ -1507,13 +1507,19 @@ namespace crimson {
                         for (auto c: new_client_map)
                         {
                             // client type update
+                            // 这里也不判断是不是pool noexist, 反正之后也会clean掉
                             handle_client_type_change(client_map[c.first], c.second);
                             // client weight update
                             if (c.second->weight != client_map[c.first]->info->weight)
                             {
                                 add_total_wgt_and_update_client_res(c.second->weight - client_map[c.first]->info->weight);
                             }
-                            delete client_map[c.first]->info;
+                            // must not delete pool_noexist
+                            if (client_map[c.first]->info->weight != 0 || client_map[c.first]->info->reservation != 0 || client_map[c.first]->info->limit != 0)
+                            {
+                                delete client_map[c.first]->info;
+                            }
+                            
                             client_map[c.first]->info = c.second;
                             //TODO: delete old clientinfo??? 
                         }
@@ -1830,7 +1836,7 @@ namespace crimson {
 
             void add_total_wgt_and_update_client_res(double wgt) {
                 std::lock_guard<std::mutex> lock(m_update_wgt_res);
-                check_removed_client();
+                //check_removed_client();
                 total_wgt += wgt;
                 for (auto c: client_map) {
                     c.second->resource = system_capacity * c.second->info->weight * win_size / total_wgt;
