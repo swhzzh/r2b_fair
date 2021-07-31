@@ -1637,6 +1637,16 @@ namespace crimson {
                 // alternatively lowest reservation tag.
                 if (allow_limit_break) {
 
+                    // 只有burst的限制是硬性的, 这里应该先处理burst, 从而减小burst的尾延迟
+                    if (!burst_heap.empty()) {
+                        auto &bursts = burst_heap.top();
+                        if (bursts.has_request() &&
+                            bursts.next_request().tag.proportion < max_tag) {
+                            bursts.b_break_limit_counter++;
+                            return NextReq(HeapId::burst);
+                        }
+                    }
+
                     if (!best_heap.empty()) {
                         auto &bests = best_heap.top();
                         if (bests.has_request() &&
@@ -1656,15 +1666,7 @@ namespace crimson {
                         }
 
                     }
-                    // burst在我们的实验中基本是肯定会被满足的，可以加入一些随机量
-                    if (!burst_heap.empty()) {
-                        auto &bursts = burst_heap.top();
-                        if (bursts.has_request() &&
-                            bursts.next_request().tag.proportion < max_tag) {
-                            bursts.b_break_limit_counter++;
-                            return NextReq(HeapId::burst);
-                        }
-                    }
+
 
                     // check reserve heap again to ensure the qos of reserve client
                     if (!resv_heap.empty()) {
