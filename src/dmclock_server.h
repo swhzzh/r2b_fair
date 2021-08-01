@@ -1473,9 +1473,9 @@ namespace crimson {
 
 //                ofs.open("/root/swh/result/scheduling.txt", std::ios_base::app);
 
-                        ofs_pwd.open(s_path.c_str(), std::ios_base::app);
+                        //ofs_pwd.open(s_path.c_str(), std::ios_base::app);
                         for (auto c : client_map) {
-                            printScheduling(c.second);
+                            //printScheduling(c.second);
                             if (ClientType::R == c.second->info->client_type && !c.second->idle) {
                                 int compensate =
                                         (c.second->info->reservation * win_size - c.second->r0_counter) / win_size;
@@ -1501,7 +1501,7 @@ namespace crimson {
                         //   printScheduling(c.second);
                         // }
 //                ofs.close();
-                        ofs_pwd.close();
+                        //ofs_pwd.close();
 
                         // handle clientinfo update
                         for (auto c: new_client_map)
