@@ -857,7 +857,7 @@ namespace crimson {
             std::map<C, int> client_no;
             std::atomic_uint next_client_no;
 
-            std::map<C, const ClientInfo*> new_client_map; 
+            std::map<C, const ClientInfo*> compensated_client_map; 
 
             c::IndIntruHeap<ClientRecRef,
                     ClientRec,
@@ -1010,6 +1010,8 @@ namespace crimson {
                 s_path += "/scheduling.txt";
 //              init_client_socket();
                 next_client_no.store(0);
+                // just update client res due to the update of the sys cap and win size
+                add_total_wgt_and_update_client_res(0);
             }
 
             template<typename Rep, typename Per>
@@ -1043,6 +1045,8 @@ namespace crimson {
                 s_path += "/scheduling.txt";
 //              init_client_socket();
                 next_client_no.store(0);
+                // just update client res due to the update of the sys cap and win size
+                add_total_wgt_and_update_client_res(0);
             }
 
             ~PriorityQueueBase() {
@@ -1063,33 +1067,34 @@ namespace crimson {
             // 这边逻辑问题比较大, 现在先这样实现吧
             // weight tag is used to limit the total resource of certain client, but deltar is just the incremental part of reservation client
             const ClientInfo *client_info_wrapper(ClientRec &client) {
-                if (is_dynamic_cli_info_f) {
-                    // for weight update
-                    const ClientInfo* temp_client_info = client_info_f(client.client);
-                    // 存在更新, 这里应该比较指针是否相等就行了, 不行, mClockPoolQueue中指针自己是不会变的, 只是指向的内容改变
-                    // 明天需要调研一下struct的new和delete, 改变一下mClockPoolQueue里面的写法, 比如每次更改都用新的指针等等, 这也比较符合dmclock的这个dynamic的设计 本来的设计
-                    // 可以看下初始版本的写法
-                    if (temp_client_info != client.info)
-                    {
-                        // 暂存起来, 之后window结束时更新即可
-                        new_client_map[client.client] = temp_client_info;
-                    }
+//                 if (is_dynamic_cli_info_f) {
+//                     // for weight update
+//                     const ClientInfo* temp_client_info = client_info_f(client.client);
+//                     // 存在更新, 这里应该比较指针是否相等就行了, 不行, mClockPoolQueue中指针自己是不会变的, 只是指向的内容改变
+//                     // 明天需要调研一下struct的new和delete, 改变一下mClockPoolQueue里面的写法, 比如每次更改都用新的指针等等, 这也比较符合dmclock的这个dynamic的设计 本来的设计
+//                     // 可以看下初始版本的写法
+//                     if (temp_client_info != client.info)
+//                     {
+//                         // 暂存起来, 之后window结束时更新即可
+//                         new_client_map[client.client] = temp_client_info;
+//                     }
                     
-                    // if (temp_client_info->weight != client.info->weight){
-                    //     add_total_wgt_and_update_client_res(temp_client_info->weight - client.info->weight);
-                    // }
-                    // client.info = client_info_f(client.client);
-//                if (client.info->client_type == ClientType::R) {
-//                  const std::shared_ptr<ClientInfo> info(
-//                          new ClientInfo(client.info->reservation, client.deltar, client.info->limit, ClientType::R));
-//                  return info.get();
-//                }
-                }
+//                     // if (temp_client_info->weight != client.info->weight){
+//                     //     add_total_wgt_and_update_client_res(temp_client_info->weight - client.info->weight);
+//                     // }
+//                     // client.info = client_info_f(client.client);
+// //                if (client.info->client_type == ClientType::R) {
+// //                  const std::shared_ptr<ClientInfo> info(
+// //                          new ClientInfo(client.info->reservation, client.deltar, client.info->limit, ClientType::R));
+// //                  return info.get();
+// //                }
+//                 }
                 if (client.info->client_type == ClientType::R) {
-                    const std::shared_ptr<ClientInfo> info(
-                            new ClientInfo(client.info->reservation + client.r_compensation, client.info->weight,
-                                           client.info->limit, ClientType::R));
-                    return info.get();
+                    // const std::shared_ptr<ClientInfo> info(
+                    //         new ClientInfo(client.info->reservation + client.r_compensation, client.info->weight,
+                    //                        client.info->limit, ClientType::R));
+                    // return info.get();
+                    return compensated_client_map[client.client];
                 }
 //                if (client.info->client_type == ClientType::B) {
 //                    const std::shared_ptr<ClientInfo> info(
@@ -1104,10 +1109,10 @@ namespace crimson {
             // 这样的话 就不需要这里计算消耗的资源了, 但是要check下在window中间的时候改变client_type有没有问题?? 应该是没事的
             void handle_client_type_change(std::shared_ptr<ClientRec> client_rec, const ClientInfo* new_client_info){
 
-                if (client_rec->info->client_type == new_client_info->client_type)
-                {
-                    return;
-                }
+                // if (client_rec->info->client_type == new_client_info->client_type)
+                // {
+                //     return;
+                // }
                 move_to_another_heap(client_rec, new_client_info);
                 
                 
@@ -1473,19 +1478,58 @@ namespace crimson {
 
 //                ofs.open("/root/swh/result/scheduling.txt", std::ios_base::app);
 
-                        //ofs_pwd.open(s_path.c_str(), std::ios_base::app);
+                        ofs_pwd.open(s_path.c_str(), std::ios_base::app);
                         for (auto c : client_map) {
-                            //printScheduling(c.second);
-                            if (ClientType::R == c.second->info->client_type && !c.second->idle) {
-                                int compensate =
+                            printScheduling(c.second);
+
+                            // 为了延迟clientinfo更新, 由于clientRec本来就存的指针, 直接访问还是能访问到新的
+                            // 所以必须每次更新后在外部都产生一个新的指针, 用来判断不同 
+                            const ClientInfo* temp_client_info = client_info_f(c.second->client);
+                            if (temp_client_info != c.second->info)
+                            {
+                                // client type update
+                                // 这里也不判断是不是pool noexist, 反正之后也会clean掉
+                                if (temp_client_info->client_type != c.second->info->client_type)
+                                {
+                                    move_to_another_heap(c.second, temp_client_info);
+                                }
+                                const ClientInfo* for_delete = c.second->info;
+                                c.second->info = temp_client_info;
+                                // client weight update
+                                if (temp_client_info->weight != for_delete->weight)
+                                {
+                                    add_total_wgt_and_update_client_res(temp_client_info->weight - for_delete->weight);
+                                }
+                                // delete old client info; must not delete pool_noexist
+                                if (for_delete->weight != 0 || for_delete->reservation != 0 || for_delete->limit != 0)
+                                {
+                                    delete for_delete;
+                                }
+                            }
+                            if (c.second->idle)
+                            {
+                                c.second->r_compensation = 0;
+                            }
+                            if (ClientType::R == c.second->info->client_type) {
+                                // 一般来说, 在本实验场景下, 请求足够多时, 由于算法的缺陷导致的reservation的达标率最低也会到80%以上
+                                // 如果达标率不到80%, 说明是client自己请求本来就不多
+                                if (c.second->r0_counter >= c.second->info->reservation * win_size * 0.8)
+                                {
+                                    int compensate =
                                         (c.second->info->reservation * win_size - c.second->r0_counter) / win_size;
-                                c.second->r_compensation += compensate;
-                                if (c.second->r_compensation < 0) {
-                                    c.second->r_compensation = 0;
+                                    c.second->r_compensation += compensate;
+                                    if (c.second->r_compensation < 0) {
+                                        c.second->r_compensation = 0;
+                                    }
+                                    else if (c.second->r_compensation > c.second->info->reservation * 0.1) {
+                                        c.second->r_compensation = c.second->info->reservation * 0.1;
+                                    }
+
+
                                 }
-                                if (c.second->r_compensation > c.second->info->reservation * 0.1) {
-                                    c.second->r_compensation = c.second->info->reservation * 0.1;
-                                }
+                                    delete compensated_client_map[c.second->client];
+                                    compensated_client_map[c.second->client] = new ClientInfo(c.second->info->reservation + c.second->r_compensation, c.second->info->weight,
+                                               c.second->info->limit, ClientType::R);
                             }
 
                             c.second->b_counter = 0;
@@ -1501,29 +1545,14 @@ namespace crimson {
                         //   printScheduling(c.second);
                         // }
 //                ofs.close();
-                        //ofs_pwd.close();
+                        ofs_pwd.close();
 
                         // handle clientinfo update
-                        for (auto c: new_client_map)
-                        {
-                            // client type update
-                            // 这里也不判断是不是pool noexist, 反正之后也会clean掉
-                            handle_client_type_change(client_map[c.first], c.second);
-                            // client weight update
-                            if (c.second->weight != client_map[c.first]->info->weight)
-                            {
-                                add_total_wgt_and_update_client_res(c.second->weight - client_map[c.first]->info->weight);
-                            }
-                            // must not delete pool_noexist
-                            if (client_map[c.first]->info->weight != 0 || client_map[c.first]->info->reservation != 0 || client_map[c.first]->info->limit != 0)
-                            {
-                                delete client_map[c.first]->info;
-                            }
-                            
-                            client_map[c.first]->info = c.second;
-                            //TODO: delete old clientinfo??? 
-                        }
-                        new_client_map.clear();
+                        // for (auto c: new_client_map)
+                        // {
+
+                        // }
+                        // new_client_map.clear();
                     }
                 }
 
@@ -1606,20 +1635,20 @@ namespace crimson {
                     }
                 }
 
+                // 这里必须有, 否则其他转到be和be转到其他client时, ready tag可能会出问题, 这里能保证ready是根据标签变化的.
+             if (!best_limit_heap.empty()) {
+               auto limits = &best_limit_heap.top();
+               while (limits->has_request() &&
+                      !limits->next_request().tag.ready &&
+                      limits->next_request().tag.limit <= now) {
+                 limits->next_request().tag.ready = true;
 
-//              if (!best_limit_heap.empty()) {
-//                auto limits = &best_limit_heap.top();
-//                while (limits->has_request() &&
-//                       !limits->next_request().tag.ready &&
-//                       limits->next_request().tag.limit <= now) {
-//                  limits->next_request().tag.ready = true;
-//
-//                  best_heap.promote(*limits);
-//                  best_limit_heap.demote(*limits);
-//
-//                  limits = &best_limit_heap.top();
-//                }
-//              }
+                 best_heap.promote(*limits);
+                 best_limit_heap.demote(*limits);
+
+                 limits = &best_limit_heap.top();
+               }
+             }
 
                 if (!best_heap.empty()) {
                     auto &bests = best_heap.top();
