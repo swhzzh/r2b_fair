@@ -1123,29 +1123,93 @@ namespace crimson {
             void move_to_another_heap(std::shared_ptr<ClientRec> client, const ClientInfo* new_client_info){
                 // delete from original heap
                 delete_from_heaps(client);
-
+                if (client->has_request())
+                {
+                    if (ClientType::R == new_client_info->client_type)
+                    {
+                        if (!resv_heap.empty())
+                        {
+                            auto& top = resv_heap.top();
+                            if (top.has_request())
+                            {
+                                client->next_request().tag = RequestTag(top.next_request().tag);
+                            }
+                            client->prev_tag = RequestTag(top.prev_tag);
+                        }
+                    }
+                    else if (ClientType::B == new_client_info->client_type)
+                    {
+                        if (!burst_heap.empty())
+                        {
+                            auto& top = burst_heap.top();
+                            if (top.has_request())
+                            {
+                            client->next_request().tag = RequestTag(top.next_request().tag);
+                            }
+                            client->prev_tag = RequestTag(top.prev_tag);
+                        }
+                        
+                    }
+                    else{
+                        if (!best_heap.empty())
+                        {
+                            auto& top = best_heap.top();
+                            if (top.has_request())
+                            {
+                            client->next_request().tag = RequestTag(top.next_request().tag);
+                            }
+                            client->prev_tag = RequestTag(top.prev_tag);
+                        }
+                    }
+                }
+                else{
+                    if (ClientType::R == new_client_info->client_type)
+                    {
+                        if (!resv_heap.empty())
+                        {
+                            auto& top = resv_heap.top();
+                            client->prev_tag = RequestTag(top.prev_tag);
+                        }
+                    }
+                    else if (ClientType::B == new_client_info->client_type)
+                    {
+                        if (!burst_heap.empty())
+                        {
+                            auto& top = burst_heap.top();
+                            client->prev_tag = RequestTag(top.prev_tag);
+                        }
+                        
+                    }
+                    else{
+                        if (!best_heap.empty())
+                        {
+                            auto& top = best_heap.top();
+                            client->prev_tag = RequestTag(top.prev_tag);
+                        }
+                    }
+                }
                 // add to new heap
                 if (new_client_info->client_type == ClientType::R) {
                     resv_heap.push(client);
                     r_limit_heap.push(client);
                     deltar_heap.push(client);
-                    resv_heap.adjust(client);
-                    r_limit_heap.adjust(client);
-                    deltar_heap.adjust(client);
+                    resv_heap.adjust(*client);
+                    r_limit_heap.adjust(*client);
+                    deltar_heap.adjust(*client.get());
                 }
 
                 else if (new_client_info->client_type == ClientType::B) {
                     limit_heap.push(client);
                     burst_heap.push(client);
-                    limit_heap.adjust(client);
-                    burst_heap.adjust(client);
+                    limit_heap.adjust(*client);
+                    burst_heap.adjust(*client);
                 }
 
                 else if (new_client_info->client_type == ClientType::A || new_client_info->client_type == ClientType::O) {
                     best_heap.push(client);
                     best_limit_heap.push(client);
-                    best_heap.adjust(client);
-                    best_limit_heap.adjust(client);
+                    best_heap.adjust(*client);
+                    best_limit_heap.adjust(*client);
                 }
                 
                 
