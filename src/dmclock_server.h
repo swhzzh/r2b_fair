@@ -1217,6 +1217,7 @@ namespace crimson {
 //                    prop_heap.push(client_rec);
 
                     client_map[client_id] = client_rec;
+                    compensated_client_map[client_id] = info;
 //                    client_no[client_id] = atomic_fetch_add(&next_client_no, 1);
                     client_no[client_id] = next_client_no.fetch_add(1);
 
@@ -1436,8 +1437,15 @@ namespace crimson {
 
             // data_mtx should be held when called
             void reduce_reservation_tags(ClientRec &client) {
+                const ClientInfo* client_info = client.info;
+                if (ClientType::R == client.info->client_type)
+                {
+                    client_info = compensated_client_map[client.client];
+                }
+                
                 for (auto &r : client.requests) {
-                    r.tag.reservation -= client.info->reservation_inv;
+                    // r.tag.reservation -= client.info->reservation_inv;
+                    r.tag.reservation -= client_info->reservation_inv;
 
 #ifndef DO_NOT_DELAY_TAG_CALC
                     // reduce only for front tag. because next tags' value are invalid
@@ -1445,11 +1453,12 @@ namespace crimson {
 #endif
                 }
                 // don't forget to update previous tag
-                client.prev_tag.reservation -= client.info->reservation_inv;
+                // client.prev_tag.reservation -= client.info->reservation_inv;
+                client.prev_tag.reservation -= client_info->reservation_inv;
                 resv_heap.promote(client);
             }
 
-
+            // 针对有补偿机制的情况, 这里就会有一些误差
             // data_mtx should be held when called
             void reduce_reservation_tags(const C &client_id) {
                 auto client_it = client_map.find(client_id);
