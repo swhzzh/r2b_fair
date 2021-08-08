@@ -1089,13 +1089,13 @@ namespace crimson {
 // //                  return info.get();
 // //                }
 //                 }
-                if (client.info->client_type == ClientType::R) {
+                // if (client.info->client_type == ClientType::R) {
                     // const std::shared_ptr<ClientInfo> info(
                     //         new ClientInfo(client.info->reservation + client.r_compensation, client.info->weight,
                     //                        client.info->limit, ClientType::R));
                     // return info.get();
-                    return compensated_client_map[client.client];
-                }
+                    // return compensated_client_map[client.client];
+                // }
 //                if (client.info->client_type == ClientType::B) {
 //                    const std::shared_ptr<ClientInfo> info(
 //                            new ClientInfo(0.0, client.info->weight, client.dlimit, ClientType::B));
@@ -1129,16 +1129,23 @@ namespace crimson {
                     resv_heap.push(client);
                     r_limit_heap.push(client);
                     deltar_heap.push(client);
+                    resv_heap.adjust(client);
+                    r_limit_heap.adjust(client);
+                    deltar_heap.adjust(client);
                 }
 
                 else if (new_client_info->client_type == ClientType::B) {
                     limit_heap.push(client);
                     burst_heap.push(client);
+                    limit_heap.adjust(client);
+                    burst_heap.adjust(client);
                 }
 
                 else if (new_client_info->client_type == ClientType::A || new_client_info->client_type == ClientType::O) {
                     best_heap.push(client);
                     best_limit_heap.push(client);
+                    best_heap.adjust(client);
+                    best_limit_heap.adjust(client);
                 }
                 
                 
@@ -1167,7 +1174,7 @@ namespace crimson {
                           << client->r0_counter << ", " << client->r0_break_limit_counter << ", "
                           << client->deltar_counter << ", " << client->deltar_break_limit_counter << ", "
                           << client->b_counter << ", " << client->b_break_limit_counter << ", "
-                          << client->be_counter << ", " << client->be_break_limit_counter << std::endl;
+                          << client->be_counter << ", " << client->be_break_limit_counter << "\n";
                 const std::string info = s_builder.str();
 //              ofs << info;
                 ofs_pwd << info;
@@ -1217,7 +1224,7 @@ namespace crimson {
 //                    prop_heap.push(client_rec);
 
                     client_map[client_id] = client_rec;
-                    compensated_client_map[client_id] = info;
+                    // compensated_client_map[client_id] = new ClientInfo(info->reservation, info->weight, info->limit, info->client_type);
 //                    client_no[client_id] = atomic_fetch_add(&next_client_no, 1);
                     client_no[client_id] = next_client_no.fetch_add(1);
 
@@ -1438,10 +1445,10 @@ namespace crimson {
             // data_mtx should be held when called
             void reduce_reservation_tags(ClientRec &client) {
                 const ClientInfo* client_info = client.info;
-                if (ClientType::R == client.info->client_type)
-                {
-                    client_info = compensated_client_map[client.client];
-                }
+                // if (ClientType::R == client.info->client_type)
+                // {
+                //     client_info = compensated_client_map[client.client];
+                // }
                 
                 for (auto &r : client.requests) {
                     // r.tag.reservation -= client.info->reservation_inv;
@@ -1469,7 +1476,17 @@ namespace crimson {
                 reduce_reservation_tags(*client_it->second);
             }
 
-
+            std::string get_client_type(const ClientInfo* info){
+                if (ClientType::R == info->client_type) {
+                    return "R";
+                } else if (ClientType::B == info->client_type) {
+                    return "B";
+                } else if (ClientType::A == info->client_type) {
+                    return "A";
+                } else {
+                    return "O";
+                }
+            }
             // data_mtx should be held when called
             NextReq do_next_request(Time now) {
                 // if proportional queue is empty, all are empty (i.e., no
@@ -1496,6 +1513,11 @@ namespace crimson {
                             const ClientInfo* temp_client_info = client_info_f(c.second->client);
                             if (temp_client_info != c.second->info)
                             {
+                                std::string new_client_type = get_client_type(temp_client_info);
+                                std::string old_client_type = get_client_type(c.second->info);
+
+                                ofs_pwd << "update: " << "(" << old_client_type << "," << c.second->info->reservation << "," << c.second->info->weight << "," << c.second->info->limit << ") -> " 
+                                        <<"(" << new_client_type << "," << temp_client_info->reservation << "," << temp_client_info->weight << "," << temp_client_info->limit << ")\n";
                                 // client type update
                                 // 这里也不判断是不是pool noexist, 反正之后也会clean掉
                                 if (temp_client_info->client_type != c.second->info->client_type)
@@ -1515,31 +1537,31 @@ namespace crimson {
                                     delete for_delete;
                                 }
                             }
-                            if (c.second->idle)
-                            {
-                                c.second->r_compensation = 0;
-                            }
-                            if (ClientType::R == c.second->info->client_type) {
-                                // 一般来说, 在本实验场景下, 请求足够多时, 由于算法的缺陷导致的reservation的达标率最低也会到80%以上
-                                // 如果达标率不到80%, 说明是client自己请求本来就不多
-                                if (c.second->r0_counter >= c.second->info->reservation * win_size * 0.8)
-                                {
-                                    int compensate =
-                                        (c.second->info->reservation * win_size - c.second->r0_counter) / win_size;
-                                    c.second->r_compensation += compensate;
-                                    if (c.second->r_compensation < 0) {
-                                        c.second->r_compensation = 0;
-                                    }
-                                    else if (c.second->r_compensation > c.second->info->reservation * 0.1) {
-                                        c.second->r_compensation = c.second->info->reservation * 0.1;
-                                    }
+                            // if (c.second->idle)
+                            // {
+                            //     c.second->r_compensation = 0;
+                            // }
+                            // if (ClientType::R == c.second->info->client_type) {
+                            //     // 一般来说, 在本实验场景下, 请求足够多时, 由于算法的缺陷导致的reservation的达标率最低也会到80%以上
+                            //     // 如果达标率不到80%, 说明是client自己请求本来就不多
+                            //     if (c.second->r0_counter >= c.second->info->reservation * win_size * 0.8)
+                            //     {
+                            //         int compensate =
+                            //             (c.second->info->reservation * win_size - c.second->r0_counter) / win_size;
+                            //         c.second->r_compensation += compensate;
+                            //         if (c.second->r_compensation < 0) {
+                            //             c.second->r_compensation = 0;
+                            //         }
+                            //         else if (c.second->r_compensation > c.second->info->reservation * 0.1) {
+                            //             c.second->r_compensation = c.second->info->reservation * 0.1;
+                            //         }
 
 
-                                }
-                                    delete compensated_client_map[c.second->client];
-                                    compensated_client_map[c.second->client] = new ClientInfo(c.second->info->reservation + c.second->r_compensation, c.second->info->weight,
-                                               c.second->info->limit, ClientType::R);
-                            }
+                            //     }
+                            //         delete compensated_client_map[c.second->client];
+                            //         compensated_client_map[c.second->client] = new ClientInfo(c.second->info->reservation + c.second->r_compensation, c.second->info->weight,
+                            //                    c.second->info->limit, ClientType::R);
+                            // }
 
                             c.second->b_counter = 0;
                             c.second->b_break_limit_counter = 0;
@@ -1662,7 +1684,7 @@ namespace crimson {
                 if (!best_heap.empty()) {
                     auto &bests = best_heap.top();
                     if (bests.has_request() &&
-                        //                  bests.next_request().tag.ready &&
+                        bests.next_request().tag.ready &&
                         bests.next_request().tag.proportion < max_tag) {
                         bests.be_counter++;
                         return NextReq(HeapId::best_effort);
