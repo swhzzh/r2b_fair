@@ -1089,13 +1089,13 @@ namespace crimson {
 // //                  return info.get();
 // //                }
 //                 }
-                // if (client.info->client_type == ClientType::R) {
+                if (client.info->client_type == ClientType::R) {
                     // const std::shared_ptr<ClientInfo> info(
                     //         new ClientInfo(client.info->reservation + client.r_compensation, client.info->weight,
                     //                        client.info->limit, ClientType::R));
                     // return info.get();
-                    // return compensated_client_map[client.client];
-                // }
+                    return compensated_client_map[client.client];
+                }
 //                if (client.info->client_type == ClientType::B) {
 //                    const std::shared_ptr<ClientInfo> info(
 //                            new ClientInfo(0.0, client.info->weight, client.dlimit, ClientType::B));
@@ -1288,7 +1288,7 @@ namespace crimson {
 //                    prop_heap.push(client_rec);
 
                     client_map[client_id] = client_rec;
-                    // compensated_client_map[client_id] = new ClientInfo(info->reservation, info->weight, info->limit, info->client_type);
+                    compensated_client_map[client_id] = new ClientInfo(info->reservation, info->weight, info->limit, info->client_type);
 //                    client_no[client_id] = atomic_fetch_add(&next_client_no, 1);
                     client_no[client_id] = next_client_no.fetch_add(1);
 
@@ -1509,10 +1509,10 @@ namespace crimson {
             // data_mtx should be held when called
             void reduce_reservation_tags(ClientRec &client) {
                 const ClientInfo* client_info = client.info;
-                // if (ClientType::R == client.info->client_type)
-                // {
-                //     client_info = compensated_client_map[client.client];
-                // }
+                if (ClientType::R == client.info->client_type)
+                {
+                    client_info = compensated_client_map[client.client];
+                }
                 
                 for (auto &r : client.requests) {
                     // r.tag.reservation -= client.info->reservation_inv;
@@ -1601,31 +1601,33 @@ namespace crimson {
                                     delete for_delete;
                                 }
                             }
-                            // if (c.second->idle)
-                            // {
-                            //     c.second->r_compensation = 0;
-                            // }
-                            // if (ClientType::R == c.second->info->client_type) {
-                            //     // 一般来说, 在本实验场景下, 请求足够多时, 由于算法的缺陷导致的reservation的达标率最低也会到80%以上
-                            //     // 如果达标率不到80%, 说明是client自己请求本来就不多
-                            //     if (c.second->r0_counter >= c.second->info->reservation * win_size * 0.8)
-                            //     {
-                            //         int compensate =
-                            //             (c.second->info->reservation * win_size - c.second->r0_counter) / win_size;
-                            //         c.second->r_compensation += compensate;
-                            //         if (c.second->r_compensation < 0) {
-                            //             c.second->r_compensation = 0;
-                            //         }
-                            //         else if (c.second->r_compensation > c.second->info->reservation * 0.1) {
-                            //             c.second->r_compensation = c.second->info->reservation * 0.1;
-                            //         }
 
+                            if (ClientType::R == c.second->info->client_type) {
+                                // if (c.second->idle)
+                                // {
+                                //     c.second->r_compensation = 0;
+                                // }
+                                // 一般来说, 在本实验场景下, 请求足够多时, 由于算法的缺陷导致的reservation的达标率最低也会到80%以上
+                                // 如果达标率不到80%, 说明是client自己请求本来就不多
+                                if (c.second->r0_counter >= c.second->info->reservation * win_size * 0.8)
+                                {
+                                    int compensate =
+                                        (c.second->info->reservation * win_size - c.second->r0_counter) / win_size;
+                                    c.second->r_compensation += compensate;
+                                    if (c.second->r_compensation < 0) {
+                                        c.second->r_compensation = 0;
+                                    }
+                                    else if (c.second->r_compensation > c.second->info->reservation * 0.1) {
+                                        c.second->r_compensation = c.second->info->reservation * 0.1;
+                                    }
 
-                            //     }
-                            //         delete compensated_client_map[c.second->client];
-                            //         compensated_client_map[c.second->client] = new ClientInfo(c.second->info->reservation + c.second->r_compensation, c.second->info->weight,
-                            //                    c.second->info->limit, ClientType::R);
-                            // }
+                                    const ClientInfo* temp_info = compensated_client_map[c.second->client];
+                                    compensated_client_map[c.second->client] = new ClientInfo(c.second->info->reservation + c.second->r_compensation, c.second->info->weight,
+                                               c.second->info->limit, ClientType::R);
+                                    delete temp_info;
+
+                                }
+                            }
 
                             c.second->b_counter = 0;
                             c.second->b_break_limit_counter = 0;
